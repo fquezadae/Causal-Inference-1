@@ -14,6 +14,8 @@
 % Video stuff
 \usepackage{media9}
 
+
+
 % packages for bibs and cites
 \usepackage{natbib}
 \usepackage{har2nat}
@@ -41,29 +43,735 @@
 \newcommand{\myurlshort}[2]{\href{#1}{\textcolor{gray}{\textsf{#2}}}}
 
 
+\title[Econometría II]{Econometría II}
+\subtitle{Variables Instrumentales}
+\author[Felipe Quezada]{Felipe Quezada Escalona}
+\date{(Slides de Scott Cunningham, Baylor University )}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
-
-\imageframe{./lecture_includes/mixtape_ci_cover.png}
+\begin{frame}[plain]
+\begin{figure}
+    \hspace{-8.75cm} \includegraphics[width=0.3\linewidth]{Images/depto_economía color.png}
+    \textbf{}
+\end{figure}
+\vspace{-15pt}
+\titlepage
+\end{frame}
 
 
 % ---- Content ----
 
+
+\section{Grafos Acíclicos Dirigidos}
+
+\begin{frame}{Ajustar por observables}
+
+\begin{itemize}
+
+\item Una de las principales formas en que se centraba la parte de "diseño" de esta rama era "ajustar por observables" que podrían estar violando la independencia.
+\item Este trabajo se remonta a mucho tiempo atrás, incluso hasta Yule en el siglo XIX, quien utilizó regresiones con controles.
+\item Pero ahora queremos ofrecer una revisión más moderna y completa de este material.
+\item Usaremos grafos para ayudarnos a entender mejor cuándo podemos eliminar el sesgo de selección simplemente incluyendo controles observables, o lo que se llama "no confusión", "ignorabilidad", "selección sobre observables" o "exogeneidad".
+ 
+\end{itemize}
+
+\end{frame}
+
+
+
+\subsection{Notación de grafos}
+
+\begin{frame}{Judea Pearl y los DAGs}
+
+\begin{itemize}
+    \item Judea Pearl y sus colegas en Inteligencia Artificial en la UCLA desarrollaron los modelos de grafos acíclicos dirigidos (DAGs) para crear una metodología formalizada de inferencia causal.
+    \item Las letras significan lo siguiente:
+    	\begin{itemize}
+	\item \textbf{D}: Dirigido. Esto es una referencia a la teoría de grafos. Los bordes directos representan caminos causales de una variable a otra.
+	\item \textbf{A}: Acíclico. Esto significa que el camino causal solo se mueve en una dirección. No hay ciclos ni retroalimentación. Limita su capacidad para representar muchas cosas en economía (por ejemplo, causalidad inversa, ecuaciones simultáneas).
+	\item \textbf{G}: Grafos. Y esto también es una referencia a la teoría de grafos. Se representan con un sistema de nodos y flechas.
+	\end{itemize}
+    \item Usaremos estos para entender la selección sobre observables ("no confusión") y variables instrumentales.
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}{Modelo causal}
+
+\begin{itemize}
+    \item Los DAGs utilizan la información previa que tienes sobre la asignación del tratamiento y los determinantes del resultado para modelar los diferentes canales (tanto directos como a través de "puertas traseras") por los cuales el tratamiento causa el resultado.
+	\item Si tu conocimiento del DAG es correcto, entonces la identificación de los efectos promedio del tratamiento se vuelve sencilla — pero hay pocas formas de "probar" el DAG, por lo que su popularidad entre los economistas ha sido recibida con escepticismo.
+	\item Sin embargo, para la selección de covariables que se utilizarán en cualquier método que controle por covariables, son indispensables.
+    \item Considera el siguiente diagrama que representa los retornos de la educación con factores de confusión simplificados.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[plain]
+
+  \begin{center}
+    \begin{tikzpicture}[node distance=1.5cm]
+      % nodos %
+      \node[text centered] (d) {$D$};
+      \node[right of = d, text centered] (y) {$Y$};
+      \node[above left of = d, text centered] (i) {$I$};
+      \node[left of = i, text centered] (pe) {$PE$};
+      \node[below of = pe, text centered] (b) {$B$};
+      % bordes %
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1,] (i) -- (d);
+      \draw[->, line width= 1,] (pe) -- (i);
+      \draw[->, line width= 1,] (pe) -- (d);
+      \draw[->, line width= 1, dashed] (b) -- (pe);
+      \draw[->, line width= 1, dashed] (b) -- (d);
+      \draw[->, line width= .5] (i) to [out=45,in=135, looseness=0.5] (y);
+    \end{tikzpicture}
+  \end{center}
+
+  \bigskip
+  \begin{itemize}
+    \item $B$ es un \textbf{progenitor} de $PE$ y $D$
+    \item $PE$ y $D$ son \textbf{descendientes} de $B$
+    \item Existe un \textbf{camino directo (causal)} de $D$ a $Y$
+    \item Existe un \textbf{camino mediado (causal)} de $B$ a $Y$ a través de $D$
+    \item Hay muchos \textbf{caminos} de $PE$ a $Y$, pero ninguno es directo, y algunos van "hacia abajo" mientras que otros van "hacia arriba"
+  \end{itemize}
+\end{frame}
+
+
+
+
+\begin{frame}{Creando tu DAG}
+
+	\begin{itemize}
+	\item Crea un DAG que sea una aproximación razonable y honesta de los progenitores (confusores) de $D$ y $Y$, así como de los efectos directos e indirectos de $D$ sobre $Y$
+	\item Donde haya incertidumbre, debes reconocerla en el DAG, y donde haya creencias, también debes mencionarlas
+	\item Obtenemos ideas para los DAGs a partir de la teoría, modelos, observación, experiencia, estudios previos, intuición, así como conversaciones con expertos en el campo
+	\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Etapa Previa de Análisis de los DAGs}
+
+	\begin{itemize}
+	\item Los DAGs están destinados a representar la verdad sobre los mecanismos de asignación de tratamiento y la selección de las unidades en \emph{tus datos}
+	\item Pero crear los DAGs después de recopilar los datos puede ser hacer trampa, ya que puedes dibujar el DAG simplemente basado en lo que tienes en lugar de lo que es cierto
+	\item Lo que determina el tratamiento en \emph{tu conjunto de datos} puede ser diferente de lo que lo determina en el de otra persona, incluso si el tema es el mismo
+	\item Deberás dedicar tiempo antes de tus proyectos a entender por qué las unidades en tus datos participaron en el tratamiento; esto no es algo que se hace después de obtener los datos
+	\end{itemize}
+\end{frame}
+
+
+
+
+\subsection{Criterio de puerta trasera}
+
+
+\begin{frame}{Confusión}
+
+  \begin{itemize}
+  	\item Las covariables que necesitas controlar bajo no confusión se llaman \textbf{confusores}, ya que los confusores crean caminos de puerta trasera desde el tratamiento hasta el resultado
+    \item Los confusores crean sesgo de selección \\
+
+          \begin{center}
+            \begin{tikzpicture}
+              [node distance=1.5cm]
+              % nodos %
+              \node[text centered] (d) {$D$};
+              \node[below right of = d, text centered] (x) {$X$};
+              \node[above right of = x, text centered] (y) {$Y$};
+
+              % bordes %
+              \draw[->, line width= 1] (d) -- (y);
+              \draw[->, line width= 1] (x) -- (d);
+              \draw[->, line width= 1] (x) -- (y);
+            \end{tikzpicture}
+          \end{center}
+
+          \item Nuestro conocimiento sobre esto nos permitirá seleccionar las covariables correctas (pero no necesariamente la especificación correcta)
+          % \item Vamos a ver \texttt{confounders.do} en nuestros laboratorios compartidos (/Labs/DAGs)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Caminos de puerta trasera}
+
+  \begin{itemize}
+    \item La confusión crea \textbf{caminos de puerta trasera} entre el tratamiento y el resultado ($D\leftarrow X\rightarrow Y$), es decir, correlaciones espurias
+		\begin{itemize}
+		\item Distinto de lo que se llama un camino de colisionador ($D \rightarrow X \leftarrow Y$)
+		\item Distinto de lo que se llama un camino mediador ($D \rightarrow X \rightarrow Y$)
+		\end{itemize}
+    \item Podemos "bloquear" cualquier camino de puerta trasera particular condicionando en la variable $X$ siempre que no sea un colisionador (visualizado aquí con un cuadrado sobre $X$)
+
+  \end{itemize}
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm]
+      % nodos %
+      \node[text centered] (d) {$D$};
+      \node[below right of = d, text centered, rectangle, draw, thin] (x) {$X$};
+      \node[above right of = x, text centered] (y) {$Y$};
+
+      % bordes %
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1] (x) -- (d);
+      \draw[->, line width= 1] (x) -- (y);
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+
+\begin{frame}{Caminos de puerta trasera}
+
+  \begin{itemize}
+    \item Una vez que condicionamos en $X$, podemos calcular las diferencias promedio en $Y$ según el estado del tratamiento para obtener una estimación de un parámetro causal agregado
+    \item Hay muchos métodos para hacer esto: regresión, emparejamiento, estratificación, ponderación
+    \item Pero todos, en su nivel fundamental, calculan diferencias simples en los resultados promedio para los valores dados de $X$ y luego toman promedios ponderados
+
+  \end{itemize}
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm]
+      % nodos %
+      \node[text centered] (d) {$D$};
+      \node[below right of = d, text centered, rectangle, draw, thin] (x) {$X$};
+      \node[above right of = x, text centered] (y) {$Y$};
+
+      % bordes %
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1] (x) -- (d);
+      \draw[->, line width= 1] (x) -- (y);
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+
+\begin{frame}{Caminos de puerta trasera}
+
+  \begin{itemize}
+
+	\item Cuando todos los caminos de puerta trasera de $D$ a $Y$ están bloqueados, entonces el único camino restante entre $D$ y $Y$ es el camino causal
+	\item A esto lo llamamos cumplir con el criterio de puerta trasera usando la terminología de los DAG de Pearl, y lo llamamos no confusión usando la terminología de resultados potenciales de Rubin (que discutiré más adelante)
+
+  \end{itemize}
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm]
+      % nodos %
+      \node[text centered] (d) {$D$};
+      \node[below right of = d, text centered, rectangle, draw, thin] (x) {$X$};
+      \node[above right of = x, text centered] (y) {$Y$};
+
+      % bordes %
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1] (x) -- (d);
+      \draw[->, line width= 1] (x) -- (y);
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+
+
+\begin{frame}{Criterio de puerta trasera}
+
+  \begin{block}{Criterio de puerta trasera}
+    Condicionar en $X$ satisface el criterio de puerta trasera con respecto a la trayectoria dirigida $(D,Y)$ si:
+    \begin{enumerate}
+      \item Todos los caminos de puerta trasera están bloqueados por $X$
+      \item Ningún elemento de $X$ es un colisionador
+    \end{enumerate}
+
+  \end{block}
+  
+       Condicionar en un no-colisionador es suficiente para cerrar un camino de puerta trasera, incluso si se ha abierto condicionando en un colisionador. Por lo tanto, asegúrate de cerrar un camino de puerta trasera si lo abriste con un colisionador.
+
+\end{frame}
+
+
+\begin{frame}{¿Qué estrategia de control satisface el criterio de puerta trasera?}
+  \begin{itemize}
+    \item Enumera todos los caminos de puerta trasera desde $D$ a $Y$. Espero.
+
+          \begin{center}
+            \begin{tikzpicture}
+              [node distance=1.5cm]
+              % nodos %
+              \node[text centered,rectangle,thin] (x1) {$X_1$};
+              \node[right of = x1, text centered] (d) {$D$};
+              \node[below right of = d, text centered] (x2) {$X_2$};
+              \node[above right of = x2, text centered] (y) {$Y$};
+
+              % bordes %
+              \draw[->, line width= .5] (x1) -- (d);
+              \draw[->, line width= .5] (d) -- (y);
+              \draw[->, line width= .5] (x2) -- (d);
+              \draw[->, line width= .5] (x2) -- (y);
+              \draw[->, line width= .5] (x1) to [out=45,in=135, looseness=0.5] (y);
+            \end{tikzpicture}
+          \end{center}
+
+    \item ¿Cuáles son los controles necesarios y suficientes que satisfacen el criterio de puerta trasera?
+  \end{itemize}
+
+  \framebreak
+
+\end{frame}
+
+
+\begin{frame}{¿Qué sucede si tienes una variable no observable?}
+
+  \begin{itemize}
+    \item Enumera todos los caminos de puerta trasera desde $D$ a $Y$.
+
+          \begin{center}
+            \begin{tikzpicture}
+              [node distance=1.5cm]
+              % nodos %
+              \node[text centered] (u) {$U$};
+              \node[right of = u, text centered] (x2) {$X_2$};
+              \node[above of = x2, text centered] (x1) {$X_1$};
+              \node[right of = x2, text centered] (d) {$D$};
+              \node[right of = d, text centered] (y) {$Y$};
+
+              % bordes %
+              \draw[->, line width= .5, dashed] (u) -- (x2);
+              \draw[->, line width= .5] (x2) -- (d);
+              \draw[->, line width= .5] (x1) -- (d);
+              \draw[->, line width= .5] (x1) -- (y);
+              \draw[->, line width= .5] (d) -- (y);
+              \draw[->, line width= .5, dashed] (u) to [out=-45,in=-135, looseness=0.5] (y);
+            \end{tikzpicture}
+          \end{center}
+
+    \item ¿Cuáles son los controles necesarios y suficientes que satisfacen el criterio de puerta trasera?
+    \item ¿Qué sucede con la variable no observable, $U$?
+  \end{itemize}
+
+  \framebreak
+
+\end{frame}
+
+
+\begin{frame}{Múltiples estrategias}
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm, text centered]
+      % nodos %
+      \node[] (x3) {$X_3$};
+      \node[above left of = x3,rectangle,draw,thin] (x1) {$X_1$};
+      \node[below left of = x3,rectangle,draw,thin] (x2) {$X_2$};
+      \node[right of = x3] (d) {$D$};
+      \node[right of = d] (y) {$Y$};
+
+      % bordes %
+      \draw[->, line width= .5] (x1) -- (x3);
+      \draw[->, line width= .5] (x2) -- (x3);
+      \draw[->, line width= .5] (x1) to [out=0,in=135, looseness=0.5] (y);
+      \draw[->, line width= .5] (x2) to [out=0,in=-135, looseness=0.5] (y);
+      \draw[->, line width= .5] (x3) -- (d);
+      \draw[->, line width= .5] (d) -- (y);
+    \end{tikzpicture}
+
+    \begin{tikzpicture}
+      [node distance=1.5cm, text centered]
+      % nodos %
+      \node[rectangle,draw,thin] (x3) {$X_3$};
+      \node[above left of = x3] (x1) {$X_1$};
+      \node[below left of = x3] (x2) {$X_2$};
+      \node[right of = x3] (d) {$D$};
+      \node[right of = d] (y) {$Y$};
+
+      % bordes %
+      \draw[->, line width= .5] (x1) -- (x3);
+      \draw[->, line width= .5] (x2) -- (x3);
+      \draw[->, line width= .5] (x1) to [out=0,in=135, looseness=0.5] (y);
+      \draw[->, line width= .5] (x2) to [out=0,in=-135, looseness=0.5] (y);
+      \draw[->, line width= .5] (x3) -- (d);
+      \draw[->, line width= .5] (d) -- (y);
+    \end{tikzpicture}
+  \end{center}
+
+  \begin{itemize}
+  \tiny
+    \item Condicionar en las causas comunes, $X_1$ y $X_2$, es suficiente, pero también lo es condicionar en $X_3$
+    % \item Consulta \texttt{confounder_multiple.do} para ver las diferencias en la varianza; el sobrecontrol es más preciso
+  \end{itemize}
+\end{frame}
+
+
+\subsection{Sesgo de colisionador}
+
+\begin{frame}{Sesgo de colisionador}
+
+\begin{itemize}
+\item Los caminos de puerta trasera pueden permanecer abiertos en las estrategias de ajuste de covariables de dos formas:
+	\begin{enumerate}
+	\item No cerraste el camino porque no condicionaste en el confundidor
+	\item Tu variable de control abrió un camino de puerta trasera previamente cerrado porque en ese camino la variable era un \textbf{colisionador}
+	\end{enumerate}
+\item Los colisionadores son "malos controles" que, cuando los controlas, \emph{crean} nuevas correlaciones espurias previamente inexistentes (no es un tema comúnmente discutido, incluso en economía)
+\item Este es el riesgo de controlar variables a ciegas: podrías incluir inadvertidamente controles malos o irrelevantes
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Ejemplo 1: Estrellas de cine}
+
+  \alert{Importante}: Dado que los colisionadores sin condicionar bloquean los caminos de puerta trasera, ¿qué hace exactamente el condicionar sobre un colisionador? Vamos a ilustrarlo con un ejemplo y algunos datos inventados\\
+  \begin{itemize}
+    \item \underline{Titular de CNN.com}: Megan Fox elegida la peor -- pero la más sexy -- actriz de 2009 \myurlshort{http://marquee.blogs.cnn.com/2009/12/30/megan-fox-voted-worst-but-sexiest-actress-of-2009/}{(enlace)}
+    \item ¿Estas dos cosas están realmente correlacionadas de forma negativa en el mundo?
+    \item Supongamos que el talento y la belleza son independientes, pero cada uno causa que alguien se convierta en una estrella de cine. ¿Cuál es la correlación entre talento y belleza en una muestra de estrellas de cine en comparación con la población en general (estrellas y no estrellas)?
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{DAG de estrella de cine}
+
+Imagina que los directores de casting eligen a las estrellas de cine basándose en el talento y la belleza.
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=2cm, text centered]
+
+      %nodos
+      \node[text centered,draw,rectangle,thin] (x) {Estrella de cine};
+      \node[below left of = x] (u1) {$Talento$};
+      \node[below right of = x] (u2) {$Belleza$};
+
+      % aristas %
+      \draw[->, line width= 2] (u1) -- (x);
+      \draw[->, line width= 2] (u2) -- (x);
+    \end{tikzpicture}
+  \end{center}
+
+El talento y la belleza pueden volverse correlacionados aunque sean independientes; véase \texttt{moviestar.R}
+
+\end{frame}
+
+\begin{frame}[shrink=20,plain]
+
+  \begin{figure}
+    \includegraphics[height=9cm]{./lecture_includes/beauty_collider.pdf}
+    \caption{Figura superior izquierda: Diagrama de dispersión de una muestra de no estrellas de belleza (eje vertical) y talento (eje horizontal). Figura superior derecha: Diagrama de dispersión de una muestra de estrellas de belleza y talento. Figura inferior izquierda: Diagrama de dispersión de una muestra total (estrellas y no estrellas) de belleza y talento.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{¿Selección de muestra?}
+
+\begin{itemize}
+\item Noten que esto es claro cuando nos enfocamos en la selección de muestra.
+\item Pero incluso una regresión que incluya ``estrella'' crearía el problema: $$belleza_i = \alpha + \delta talento_i + \beta estrella_i + \varepsilon_i$$
+\item No es solo selección de muestra.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Ejemplo 2: Discriminación}
+
+  \begin{itemize}
+    \item Veamos otro ejemplo: es muy común que los think tanks y los periodistas digan que la brecha de género en los salarios desaparece una vez que se controla por ocupación.
+    \item Pero, ¿y si la ocupación es un colisionador, lo cual podría ser en un modelo con clasificación ocupacional?
+    \item Entonces, controlar por ocupación en una regresión salarial que busca discriminación puede llevar a todo tipo de resultados extraños, \emph{incluso en una simulación en la que diseñamos explícitamente que haya discriminación}.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{DAG}
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm]
+      % nodos %
+      \node[text centered] (f) {$F$};
+      \node[above right of = f, text centered] (d) {$d$};
+      \node[right of = f] (y) {$y$};
+      \node[below  of = f, text centered] (o) {$o$};
+      \node[right of = o, text centered] (a) {$A$};
+
+      % aristas %
+      \draw[->, line width= 1] (f) -- (d);
+      \draw[->, line width= 1] (d) -- (o);
+      \draw[->, line width= 1, dashed] (a) -- (o);
+
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1] (o) -- (y);
+      \draw[->, line width= 1, dashed] (a) -- (y);
+
+    \end{tikzpicture}
+  \end{center}
+
+  $F$ es femenino, $d$ es discriminación, $o$ es ocupación, $y$ son ingresos y $A$ es habilidad. Las líneas discontinuas indican que la variable no puede observarse. Noten que, por diseño, ser mujer no tiene efecto sobre los ingresos o la ocupación, y no tiene relación con la habilidad. Así que los ingresos se explican a través de discriminación, ocupación y habilidad.
+
+\end{frame}
+
+\begin{frame}[plain]
+
+  \begin{center}
+    \begin{tikzpicture}
+      [node distance=1.5cm]
+      % nodos %
+      \node[text centered] (f) {$F$};
+      \node[above right of = f, text centered] (d) {$d$};
+      \node[right of = f] (y) {$y$};
+      \node[below  of = f, text centered] (o) {$o$};
+      \node[right of = o, text centered] (a) {$A$};
+
+      % aristas %
+      \draw[->, line width= 1] (f) -- (d);
+      \draw[->, line width= 1] (d) -- (o);
+      \draw[->, line width= 1, dashed] (a) -- (o);
+
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1] (o) -- (y);
+      \draw[->, line width= 1, dashed] (a) -- (y);
+
+    \end{tikzpicture}
+  \end{center}
+
+  Mediación y Caminos de puerta trasera
+
+  \begin{enumerate}
+    \item $d$ $\rightarrow o \rightarrow y$
+    \item $d$ $\rightarrow o \leftarrow A \rightarrow y$
+  \end{enumerate}
+
+\end{frame}
+
+
+\begin{frame}[plain, shrink=20]
+
+  \begin{table}[htbp]\centering
+    \scriptsize
+    \caption{Regresiones que ilustran sesgo de colisionador con disparidad de género simulada}
+    \begin{center}
+      \begin{tabular}{l*{3}{c}}
+        \toprule
+        \multicolumn{1}{l}{Covariables: }&
+        \multicolumn{1}{c}{\textbf{Efecto combinado no sesgado}}&
+        \multicolumn{1}{c}{\textbf{Sesgado}}&
+        \multicolumn{1}{c}{\textbf{Solo efecto no sesgado del salario}}\\
+        \midrule
+        Mujer                      & -3.074*** & 0.601*** & -0.994*** \\
+                                   & (0.000)   & (0.000)  & (0.000)   \\
+        Ocupación                  &           & 1.793*** & 0.991***  \\
+                                   &           & (0.000)  & (0.000)   \\
+        Habilidad                  &           &          & 2.017***  \\
+                                   &           &          & (0.000)   \\
+        \\
+        \midrule
+        N                          & 10,000    & 10,000   & 10,000    \\
+        Media de la variable dependiente & 0.45      & 0.45     & 0.45      \\
+        \bottomrule
+      \end{tabular}
+    \end{center}
+  \end{table}
+
+  \begin{itemize}
+    \item Recordemos que diseñamos el coeficiente de discriminación para ser -1
+    \item Si no controlamos por ocupación, obtenemos el efecto combinado de $d \rightarrow o \rightarrow y$ y $d  \rightarrow y$
+    \item Aunque parece intuitivo controlar por ocupación, observa la columna 2: ¡el signo cambia!
+    \item Solo podemos aislar el efecto causal directo condicionando sobre habilidad y ocupación, pero la habilidad no se observa
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}[allowframebreaks,plain]
+
+  \begin{itemize}
+    \item \textbf{Los colisionadores pueden ser resultados (y a menudo lo son)}
+          \begin{itemize}
+            \item Solo hay un camino de puerta trasera de $D$ a $Y$
+
+                  \begin{center}
+                    \begin{tikzpicture}
+                      [node distance=1.5cm]
+                      % nodos %
+                      \node[text centered,draw,rectangle,thin] (x1) {$X_1$};
+                      \node[right of = x1, text centered] (d) {$D$};
+                      \node[below right of = d, text centered] (x2) {$X_2$};
+                      \node[above right of = x2, text centered] (y) {$Y$};
+
+                      % aristas %
+                      \draw[->, line width= .5] (x1) -- (d);
+                      \draw[->, line width= .5] (d) -- (y);
+                      \draw[->, line width= .5] (d) -- (x2);
+                      \draw[->, line width= .5] (y) -- (x2);
+                      \draw[->, line width= .5] (x1) to [out=45,in=135, looseness=0.5] (y);
+                    \end{tikzpicture}
+                  \end{center}
+                  
+
+            \item Condicionar en $X_1$ bloquea el camino de puerta trasera
+
+
+            \item Pero, ¿qué pasa si también condicionamos en $X_2$?
+
+                  \begin{center}
+                    \begin{tikzpicture}
+                      [node distance=1.5cm]
+                      % nodos %
+                      \node[text centered,draw,rectangle,thin] (x1) {$X_1$};
+                      \node[right of = x1, text centered] (d) {$D$};
+                      \node[below right of = d, draw, rectangle, text centered] (x2) {$X_2$};
+                      \node[above right of = x2, text centered] (y) {$Y$};
+
+                      % aristas %
+                      \draw[->, line width= .5] (x1) -- (d);
+                      \draw[->, line width= .5] (d) -- (y);
+                      \draw[->, line width= .5] (d) -- (x2);
+                      \draw[->, line width= .5] (y) -- (x2);
+                      \draw[->, line width= .5] (x1) to [out=45,in=135, looseness=0.5] (y);
+                    \end{tikzpicture}
+                  \end{center}
+
+            \item Condicionar en $X_2$ abre un nuevo camino, creando correlaciones espurias entre $D$ y $Y$ 
+          \end{itemize}
+
+          \framebreak
+
+
+    \item \textbf{Los colisionadores pueden ser covariables pre-tratamiento (llamado sesgo en M porque parece una M)}
+          \begin{itemize}
+            \item Nombra los caminos de puerta trasera. ¿Están abiertos o cerrados?
+
+                  \begin{center}
+                    \begin{tikzpicture}
+                      [node distance=1.5cm, text centered]
+                      % nodos %
+                      \node[] (x) {$X$};
+                      \node[above left of = x] (u1) {$U_1$};
+                      \node[below left of = x] (u2) {$U_2$};
+                      \node[right of = x] (d) {$D$};
+                      \node[right of = d] (y) {$Y$};
+
+                      % aristas %
+                      \draw[->, line width= .5, dashed] (u1) -- (x);
+                      \draw[->, line width= .5, dashed] (u2) -- (x);
+                      \draw[->, line width= .5, dashed] (u1) to [out=0,in=135, looseness=0.5] (y);
+                      \draw[->, line width= .5, dashed] (u2) to [out=0,in=-135, looseness=0.5] (d);
+                      \draw[->, line width= .5] (d) -- (y);
+                    \end{tikzpicture}
+                  \end{center}
+
+            \item Pero, ¿qué pasa si condicionamos en $X$?
+
+                  \begin{center}
+                    \begin{tikzpicture}
+                      [node distance=1.5cm, text centered]
+                      % nodos %
+                      \node[text centered,draw,rectangle,thin] (x) {$X$};
+                      \node[above left of = x] (u1) {$U_1$};
+                      \node[below left of = x] (u2) {$U_2$};
+                      \node[right of = x] (d) {$D$};
+                      \node[right of = d] (y) {$Y$};
+
+                      % aristas %
+                      \draw[->, line width= .5, dashed] (u1) -- (x);
+                      \draw[->, line width= .5, dashed] (u2) -- (x);
+                      \draw[->, line width= .5, dashed] (u1) to [out=0,in=135, looseness=0.5] (y);
+                      \draw[->, line width= .5, dashed] (u2) to [out=0,in=-135, looseness=0.5] (d);
+                      \draw[->, line width= .5] (d) -- (y);
+                    \end{tikzpicture}
+                  \end{center}
+
+
+          \end{itemize}
+  \end{itemize}
+  \framebreak
+
+
+\end{frame}
+
+\begin{frame}{Probando la Validez del DAG}
+
+  \begin{itemize}
+    \item El DAG hace predicciones comprobables
+    \item Condicionado a $D$ e $I$, la educación parental ($PE$) ya no debería estar correlacionada con $Y$
+    \item Puede ser difícil descifrar esto a mano, pero el software puede ayudar (por ejemplo, Daggity.net es basado en navegador, Causal Fusion es más avanzado)
+    \item Los algoritmos causales tienden a estar basados en DAG y se están volviendo populares en la industria
+  \end{itemize}
+
+  \begin{center}
+    \begin{tikzpicture}[node distance=1.5cm]
+      % nodos %
+      \node[text centered] (d) {$D$};
+      \node[right of = d, text centered] (y) {$Y$};
+      \node[above left of = d, text centered] (i) {$I$};
+      \node[left of = i, text centered] (pe) {$PE$};
+      \node[below of = pe, text centered] (b) {$B$};
+      % aristas %
+      \draw[->, line width= 1] (d) -- (y);
+      \draw[->, line width= 1,] (i) -- (d);
+      \draw[->, line width= 1,] (pe) -- (i);
+      \draw[->, line width= 1,] (pe) -- (d);
+      \draw[->, line width= 1, dashed] (b) -- (pe);
+      \draw[->, line width= 1, dashed] (b) -- (d);
+      \draw[->, line width= .5] (i) to [out=45,in=135, looseness=0.5] (y);
+    \end{tikzpicture}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}{Contraste con las prácticas ordinarias}
+
+  \begin{itemize}
+    \item Las personas intentan ``controlar el sesgo por variables omitidas'' al incluir la mayor cantidad posible de ``controles''
+    \item No intentan pensar en el mecanismo de asignación del tratamiento, por lo que no tienen idea de qué variables son colisionadores, covariables o factores de confusión
+    \item El aprendizaje automático también puede ser ``ingenuo'' si la gran dimensión de características incluye colisionadores de manera inadvertida
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{}
+
+  \begin{figure}
+    \includegraphics[scale=0.25]{./lecture_includes/paul_dml}
+  \end{figure}
+
+\end{frame}
+
+% \begin{frame}{Selección de covariables sin DAGs}
+
+%   \begin{itemize}
+%     \item ¿Qué sucede si no tienes un DAG en el que te sientas confiado?
+%       \begin{enumerate}
+%         \item Incluye factores de confusión que creas que con bastante seguridad están presentes
+%         \item Incluye covariables que sean \emph{altamente predictivas} del contrafactual faltante (por ejemplo, $Y^0$ para el ATT)
+%         \item Evita los resultados (aunque esto no resolverá los colisionadores de sesgo M)
+%       \end{enumerate}
+%     \item Aunque este enfoque puede estar menos formalizado, al menos estás razonando sobre el mecanismo de asignación del tratamiento en lugar de incluir cualquier variable que tengas a mano (evita las ``regresiones de cocina de todo'')
+%   \end{itemize}
+
+% \end{frame}
+
 \section{Instrumental variables}
 
-\subsection{Background}
 \subsection{Intuition}
 
 \begin{frame}{Instrumental variables}
 
 \begin{itemize}
-\item When you cannot observe all the confounders (or don't know them), or the concept of CIA doesn't seem plausible, then selection on observable methods do not solve the problem
-\item Alternative methods were developed but they themselves also have specific instances where they are suitable and when they aren't
-\item One popular method is the instrumental variables method which is the most popular of all designs (see next slide)
+\item Cuando no se pueden observar todos los factores de confusión (o no se conocen), o Supuesto de Independencia Condicional (Conditional Independence Assumption en inglés) no parece plausible, entonces los métodos de selección sobre lo observable no resuelven el problema.
+\item Se han desarrollado métodos alternativos, pero también tienen casos específicos en los que son adecuados y cuando no lo son.
+\item Un método popular es el de variables instrumentales, que es el más común de todos los diseños (ver siguiente diapositiva).
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{IV Popularity}
+\begin{frame}{Popularidad de IV}
 
 	\begin{figure}
 	\includegraphics[scale=.15]{./lecture_includes/currie_iv}
@@ -71,535 +779,390 @@
 	
 \end{frame}
 
-\begin{frame}{What is instrumental variables?}
+\begin{frame}{¿Qué son las variables instrumentales?}
 
-\begin{itemize}
-\item Often associated with ``natural experiments'' because an instrument is when we discovered our treatment variable randomly changed when a third seemingly inconsequential event occurred
-\item Natural experiments are rarely ``good instruments'' because they often are associated with too much destruction to be useful, but the metaphor can be helpful because we often use instruments to recreate the conditions of a randomized experiment outside the lab
-\item Do we find instruments or do they find us?  They tend to become apparent to us when we understand what they are as otherwise they're chameleons blending into the background
+\begin{itemize} \item A menudo se asocian con ``experimentos naturales'' porque un instrumento es cuando descubrimos que nuestra variable de tratamiento cambió aleatoriamente cuando ocurrió un tercer evento aparentemente inconsecuente. \item Los experimentos naturales rara vez son ``buenos instrumentos'' porque suelen estar asociados con demasiada destrucción para ser útiles, pero la metáfora puede ser útil, ya que a menudo usamos instrumentos para recrear las condiciones de un experimento aleatorio fuera del laboratorio. \item ¿Encontramos los instrumentos o ellos nos encuentran a nosotros? Tienden a volverse evidentes cuando entendemos lo que son, ya que de otro modo son como camaleones que se mezclan con el fondo.
 
 \end{itemize}
 
 \end{frame}
 
 
-
-	
-\begin{frame}{IV from my research}
+\begin{frame}{Usos de las variables instrumentales}
 
 \begin{itemize}
-\item Estimated the effect of growing online sex work on street prostitution arrests using commercial broadband adoption as an instrument for online sex work (Cunningham and Kendall 2010)
-\item Estimated the effect of parental meth abuse on foster care and child abuse/neglect using changes in meth prices caused by shortages of ephedrine and pseudoephedrine as an instrument for meth abuse (Cunningham and Finlay 2010)
-\item Estimated the price elasticity of demand for meth using the same instrument (Cunningham and Finlay 2014)
-\item Estimated the effect of being classified mentally ill in jail on suicide attempts (Seward, Cunningham, Vigliotti and Clay 2022)
+\item Cuando tienes factores de confusión no observados, las IV pueden funcionar.
+\item Cuando tienes causalidad inversa, las IV podrían ayudar.
+\item Cuando tienes variables que se determinan simultáneamente (como en mercados con oferta y demanda), las IV pueden intervenir.
+\item Cuando realizas un experimento (RCT, pruebas AB, etc.) pero no todos obedecen la asignación de su tratamiento, las IV te ayudarán.
+\item Cuando tu variable de tratamiento se mide con error, las IV pueden ayudar.
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Uses of instrumental variables}
-
-\begin{itemize}
-\item When you have unobserved confounders, IV may work
-\item When you have reverse causality, IV could help
-\item When you have variables being determined simultaneously (like in markets with supply and demand), then IV can step in
-\item When you run an experiment (RCT, AB tests, etc.) but not everyone obeys their treatment assignment, IV will help you
-\item When your treatment variable is measured with error, IV can help
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}{My Teaching Style}
+\begin{frame}{¿Como Scott Cunningham ve la enseñanza de IV?}
 
 \begin{enumerate}
-\item Intuition first -- what is an instrument and what do you do with it?
-\item Estimation second -- what are most common methods employed?
-\item Interpretation -- constant treatment effects versus heterogeneous treatment effects and the LATE parameter
-\item Applications -- price elasticity of demand, leniency
+    \item Intuición primero -- ¿qué es un instrumento y qué se hace con él?
+    \item Estimación después -- ¿cuáles son los métodos más comunes empleados?
+    \item Interpretación -- efectos de tratamiento constantes versus efectos de tratamiento heterogéneos y el parámetro LATE
+    \item Aplicaciones -- elasticidad precio de la demanda, indulgencia
 \end{enumerate}
+
 
 \end{frame}
 
-\begin{frame}{Constant versus heterogenous treatment effects}
+\begin{frame}{Efectos de tratamiento constantes versus heterogéneos}
 
-Angrist and Imbens won the Nobel Prize (with Card) in October 2021 for their work on instrumental variables which focused on interpretation when treatment effects differed across a population
+Angrist e Imbens ganaron el Premio Nobel (junto con Card) en octubre de 2021 por su trabajo sobre variables instrumentales, que se centró en la interpretación cuando los efectos del tratamiento variaban en una población.
 
 \begin{itemize}
-\item \textbf{Constant treatment effects}: you and I both benefit the same from a college degree
-\item \textbf{Heterogenous treatment effects}: college degree \emph{causes} my wages to rise by 5\% but caused yours to rise by 18\%
+    \item \textbf{Efectos de tratamiento constantes}: tanto tú como yo nos beneficiamos de la misma manera de un título universitario.
+    \item \textbf{Efectos de tratamiento heterogéneos}: el título universitario \emph{causa} que mis salarios aumenten un 5\%, pero provoca que los tuyos aumenten un 18\%.
 \end{itemize}
 
 \bigskip
 
-We'll start with the first but then move into the second.
+Comenzaremos con el primero, pero luego pasaremos al segundo.
 
 \end{frame}
 
 
-\begin{frame}{Instruments aren't labeled}
+\begin{frame}{Los instrumentos no están etiquetados}
 
-	\begin{itemize}
-	\item Your data isn't going to come with a codebook saying ``instrumental variable''.  So how do you find it?
-	\item Well, sometimes the researcher just \emph{knows}
-	\item You know instruments when you see them because you know what their general structure is, and then notice them in the events and surroundings of the thing you're studying (Angrist and Krueger 2001).  
-	\end{itemize}
+    \begin{itemize}
+        \item Tus datos no van a venir con un manual que diga ``variable instrumental''. Entonces, ¿cómo la encuentras?
+        \item A veces, el investigador simplemente \emph{lo sabe}.
+        \item Reconoces los instrumentos cuando los ves, porque sabes cuál es su estructura general y luego los identificas en los eventos y el entorno de lo que estás estudiando (Angrist y Krueger 2001).
+    \end{itemize}
 \end{frame}
 
 
-\begin{frame}{Picking a good instrument}
+\begin{frame}{Escogiendo un buen instrumento}
 
-	\begin{itemize}
-	\item Typically instruments are random events that are captured with a covariate that are highly predictive of your treatment variable but are in no other way related to the outcome
-	\item If you want to use IV, then ask yourself this questions: 
-		\begin{quote}
-		Is there \emph{any} part of your treatment variable that is blown by the wind (i.e., random)? If so, is there a variable you know of that is associated with that randomness?
-		\end{quote}
-		\item In other words, is there any element in the treatment that could be construed as driven by a non-confounder (i.e., random)?  
-	\end{itemize}
+    \begin{itemize}
+        \item Los instrumentos suelen ser eventos aleatorios capturados por una covariable que es altamente predictiva de tu variable de tratamiento, pero que no está relacionada de ninguna otra forma con el resultado.
+        \item Si quieres usar IV, entonces pregúntate lo siguiente: 
+            \begin{quote}
+            ¿Hay \emph{alguna} parte de tu variable de tratamiento que esté influenciada por el azar (es decir, aleatoria)? Si es así, ¿conoces alguna variable que esté asociada a esa aleatoriedad?
+            \end{quote}
+        \item En otras palabras, ¿hay algún elemento en el tratamiento que podría interpretarse como impulsado por un factor no confusor (es decir, aleatorio)?
+    \end{itemize}
 \end{frame}
 
+% \begin{frame}{Ejemplo de rareza}
+
+%     \begin{itemize}
+%         \item ¿Qué tal si te dijera que si los primeros dos hijos nacidos son del mismo sexo, la madre es menos propensa a trabajar?
+%         \item ¿Qué tiene que ver la composición por sexo de los primeros dos hijos con la disposición o capacidad de la madre para trabajar? \pause
+%         \item Para una persona inteligente sin conocimientos específicos, no está claro por qué debería importar \pause lo que lo convierte en un buen instrumento potencial.
+%     \end{itemize}
+
+% \end{frame}
+
+% \begin{frame}{Angrist y Evans cont.}
+
+%     \begin{itemize}
+%         \item Muchos padres tienen tanto una ``regla de paro'' como una preferencia por tener al menos un hijo de cada sexo.
+%             \begin{itemize}
+%                 \item Si una pareja cuyos primeros dos hijos son ambos varones, a menudo tendrán un tercero, con la esperanza de tener una niña.
+%                 \item Si una pareja cuyos primeros dos hijos son ambos niñas, a menudo tendrán un tercero, con la esperanza de tener un niño.
+%                 \item Pero si es niño/niña o niña/niño, a menudo \textbf{paran}.
+%             \end{itemize}
+%         \item El sexo de tus hijos es esencialmente aleatorio (históricamente, la probabilidad de tener un niño es de alrededor de 0.51).
+%         \item Josh Angrist y Bill Evans usaron la proporción de sexos de los primeros dos hijos como un instrumento para el tamaño de la familia, con el fin de estimar el efecto del tamaño de la familia sobre si una mujer trabajaba.
+%     \end{itemize}
+
+% \end{frame}
+
+% \begin{frame}{Los buenos instrumentos deben ser un poco extraños}
+
+%     \begin{itemize}
+%         \item A simple vista, es desconcertante que el género de los primeros dos hijos prediga la participación en el mercado laboral.
+%         \item Las estrategias de variables instrumentales formalizan esta \emph{rareza}.
+%         \item El principio de rareza es la inferencia que extrae una persona inteligente sin conocimiento particular de los fenómenos o antecedentes en estadística.
+%         \item Sin entender la pregunta de investigación (tamaño de la familia $\rightarrow$ trabajo materno), la correlación del instrumento con el resultado (la proporción de sexos de los primeros dos hijos prediciendo el trabajo materno) no tiene sentido.
+%     \end{itemize}
+
+% \end{frame}
 
 
-\begin{frame}{Strangeness Example}
 
-		\begin{itemize}
-		\item What if I told you if the first two children born were of the same sex, then the mother is less likely to work.
-		\item What does sex composition of first two born have to do with a mother's willingness or ability to work? \pause
-		\item Unclear to an intelligent layperson why it should matter \pause which is why it is a good instrument potentially
-		\end{itemize}
-
-\end{frame}
-
-
-\begin{frame}{Angrist and Evans cont.}
+\begin{frame}{El clima es un buen instrumento}
 
 \begin{itemize}
-
-		\item Many parents have both a ``stopping rule'' and a preference for having at least one child of each sex
-			\begin{itemize}	
-			\item If a couple whose first two kids were both boys, they will often have a third, hoping to have a girl
-			\item If a couple whose first two kids were both girls, they will often have a third, hoping to have a boy
-			\item But if it was boy/girl or girl/boy, they will often \textbf{stop}
-			\end{itemize}
-		\item Sex of your kids is essentially as good as random (around 0.51 historically chance of a boy)
-		\item Josh Angrist and Bill Evans used sex ratio of first two kids as an instrument for family size to estimate effect of family size on whether a woman worked
-		\end{itemize}
-
-\end{frame}
-
-
-
-\begin{frame}{Good instruments must be a bit strange}
-
-\begin{itemize}
-		\item On its face, it's puzzling that the first two kids' gender predicts labor market participation
-		\item Instrumental variables strategies formalize this \emph{strangeness}, 
-		\item Strangeness principle is the inference drawn by an intelligent layperson with no particular knowledge of the phenomena or background in statistics.
-		\item Without understanding the research question (family size $\rightarrow$ maternal work), the instrument's correlation with the outcome (sex ratio of first two kids predicting maternal work) makes no sense
+\item Imagínate que queremos estudiar el impacto de la productividad en las tasas de éxito empresarial.
+\item El clima es un buen instrumento, ya que afecta la productividad de las personas, pero no tiene una influencia directa sobre el éxito empresarial.
+\item Por lo tanto, podemos usar el clima como un instrumento para medir el efecto de la productividad en el éxito empresarial.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Diagrama de DAG para el clima}
+
+\begin{center}
+\begin{minipage}{.5\textwidth}
+\begin{center}
+\begin{tikzpicture}[node distance=1.5cm]
+	% nodos %
+	\node[text centered] (u) {$U$};
+	\node[below right of  = u, text centered] (y) {$Exito$};
+	\node[below left of = u, text centered] (d) {$Productividad$};
+	\node[above left of = d, text centered] (z) {$Clima$};
+	% conexiones %
+	\draw[->, line width=1] (d) -- (y);
+	\draw[->, line width=1] (z) -- (d);
+	\draw[dashed, ->] (u) -- (y);
+	\draw[dashed, ->] (u) -- (d);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\end{center}
 
 \end{frame}
 
-
-\begin{frame}{Sunday Candy is a good instrument}
-
-\begin{itemize}
-		\item Let's listen to a few lines from ``Ultralight Beam'' by Kanye West (skip to 2:30, but then it's around 3:15)
-		\item Chance the Rapper sings the following two lines
-
-\bigskip
-
-\begin{quote}
-``I made Sunday Candy, I'm never going to hell \\
-
-
-I met Kanye West, I'm never going to fail.'' \\
-
-
-- Chance the Rapper
-\end{quote}
-
-	\item What does a song have to do with hell, or meeting Kanye to do with success?  
-	\item These are instruments, but for what and are they good ones?
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{What are we missing?}
-
-			\begin{quote}
-			``I made Sunday Candy, \\
-			I'm never going to hell'', 
-			\end{quote}
-		\begin{itemize}
-		\item There must be more to this story, right?
-		\item So what if it's something like this
-		\end{itemize}
-			\begin{quote}
-			``I made Sunday Candy \\
-			 \textcolor{blue}{a pastor invited me to church on Sunday}, \\
-			  I'm never going to hell''
-			\end{quote}
-
-\end{frame}
-
-
-
-
-\begin{frame}{Sunday Candy DAG}
-	
-	
-	\begin{center}
-	\begin{minipage}{.5\textwidth}
-	
-	\begin{center}
-	
-	\begin{tikzpicture}[node distance=1.5cm]
-	
-		% nodes - for left-hand DAG %
-		\node[text centered] (u) {$U$};
-		\node[below right of  = u, text centered] (y) {$Hell$};
-		\node[below left of = u, text centered] (d) {$Church$};
-		\node[above left of = d, text centered] (z) {$Sunday\ Candy$};
- 
-		% edges %
-		\draw[->, line width=1] (d) -- (y);
-		\draw[->, line width=1] (z) -- (d);
-		\draw[dashed, ->] (u) -- (y);
-		\draw[dashed, ->] (u) -- (d);
-
-		\end{tikzpicture}
-		\end{center}
-		\end{minipage}
-
-
-	\end{center}
-
-
-\end{frame}	
-
-
-\begin{frame}{Kanye West is a bad instrument}
-
-\begin{itemize}
-\item Chance long idolized and was inspired by Kanye West -- both Chicago, both very creative hip hop artists
-\item Kanye West is not a good instrument for Chance's inspiration, though, because Kanye West can singlehandedly make a person's career
-\item Kanye is not strange enough
-\end{itemize}
-
-\end{frame}
-
-
-\begin{frame}{Kanye West DAG}
-	
-	
-	\begin{center}
-	\begin{minipage}{.5\textwidth}
-	
-	\begin{center}
-	
-	\begin{tikzpicture}[node distance=1.5cm]
-	
-		% nodes - for left-hand DAG %
-		\node[text centered] (u) {$U$};
-		\node[below right of  = u, text centered] (y) {$Success$};
-		\node[below left of = u, text centered] (d) {$Inspiration$};
-		\node[above left of = d, text centered] (z) {$Kanye\ West$};
- 
-		% edges %
-		\draw[->, line width=1] (d) -- (y);
-		\draw[->, line width=1] (z) -- (d);
-		\draw[->, line width=1] (z) -- (y);
-		\draw[dashed, ->] (u) -- (y);
-		\draw[dashed, ->] (u) -- (d);
-
-		\end{tikzpicture}
-		\end{center}
-		\end{minipage}
-
-
-	\end{center}
-
-
-\end{frame}	
-
-
-\begin{frame}{Some questions you need to be asking}
+\begin{frame}{Algunas preguntas que debes hacerte}
 
 \begin{enumerate}
-	\item Is our instrument highly correlated with the treatment? With the outcome? Can we see evidence for this?
-	\item Are there random reasons why our treatment changes? Why do you think that?
-	\item Is the instrument independent of confounders?  Why do you think that?
-	\item Could the instrument affect outcomes directly? Why do you think that?
+    \item ¿Nuestro instrumento está altamente correlacionado con el tratamiento? ¿Con el resultado? ¿Podemos ver evidencia de esto?
+    \item ¿Existen razones aleatorias por las que nuestro tratamiento cambia? ¿Por qué piensas eso?
+    \item ¿El instrumento es independiente de los factores de confusión? ¿Por qué piensas eso?
+    \item ¿El instrumento podría afectar directamente los resultados? ¿Por qué piensas eso?
 \end{enumerate}
 
 \end{frame}
 
+\section{Estimadores}
 
+\subsection{Dos pasos}
 
-
-\section{Estimators}
-
-\subsection{Two Step}
-
-\begin{frame}{Two step vs Minimum Distance}
+\begin{frame}{Dos etapas vs Mínima Distancia}
 
 \begin{itemize}
-\item The two-stage least squares (2SLS) estimator was developed by Theil (1953) and Basman (1957) independently
-\item Kolesa\'r has a helpful distinction: two step (Wald, 2 Sample IV, JIVE, UJIVE, 2SLS) vs minimum distance estimators (LIML)
-\item Too much to review as IV is a \emph{huge} area, so I will focus on a few things, starting with two stage least squares (2SLS)
-\item 2SLS is basically the workhorse IV model, though it can have some issues because of its finite sample bias with weak instruments
+\item El estimador de mínimos cuadrados en dos etapas (2SLS) fue desarrollado de manera independiente por Theil (1953) y Basman (1957)
+\item Kolesa\'r hace una distinción útil: dos etapas (Wald, IV de dos muestras, JIVE, UJIVE, 2SLS) vs estimadores de mínima distancia (LIML)
+\item Hay demasiado que revisar ya que IV es un área \emph{enorme}, así que me centraré en algunos temas, comenzando con mínimos cuadrados en dos etapas (2SLS)
+\item 2SLS es básicamente el modelo IV más utilizado, aunque puede tener algunos problemas debido a su sesgo de muestra finita con instrumentos débiles
 \end{itemize}
 
 \end{frame}
 
 
-
-
-\begin{frame}{Wald estimator}
+\begin{frame}{Estimador de Wald}
 
 \begin{eqnarray*}
 Y = \alpha + \delta S + \gamma A + \nu
 \end{eqnarray*}
-where $Y$ is log earnings, $S$ is years of schooling, $A$ is unobserved ability, and $\nu$ is the error term
+donde $Y$ son los ingresos en logaritmos, $S$ son los años de escolaridad, $A$ es la habilidad no observada y $\nu$ es el término de error
 
 \begin{itemize}
-	\item Suppose there exists a variable, $Z_i$, that is correlated with $S_i$ .
-	\item We can estimate $\delta$ with this variable, $Z$:
+    \item Supón que existe una variable, $Z_i$, que está correlacionada con $S_i$.
+    \item Podemos estimar $\delta$ con esta variable, $Z$:
 \end{itemize}
 
 \end{frame}
 
 
-\begin{frame}{Deriving Wald}
-	
-		\begin{eqnarray*}
-		Cov(Y,Z) 	&=& Cov(\alpha + \delta{S} + \gamma{A} + \nu, Z) \\
-				&=&	E[(\alpha + \delta{S} + \gamma{A} + \nu)  Z] - E[\alpha + \delta{S} + \gamma{A} + \nu]E[Z] \\
-				&=& \{\alpha E(Z) - \alpha E(Z) \} + \delta \{ E(SZ) - E(S)E(Z)\} \\
-				&& + \gamma \{E(AZ) - E(A)E(Z) \} + E(\nu Z) - E(\nu)E(Z) \\
-		Cov(Y,Z)	&=& \delta Cov(S,Z) + \gamma Cov(A,Z) + Cov(\nu,Z)
-		\end{eqnarray*}
-		Divide both sides by $Cov(S,Z)$ and the first term becomes $\delta$, the LHS becomes the ratio of the reduced form to the first stage, plus two other scaled terms.
+\begin{frame}{Deducción del estimador de Wald}
+    
+    \begin{eqnarray*}
+    Cov(Y,Z) 	&=& Cov(\alpha + \delta{S} + \gamma{A} + \nu, Z) \\
+            &=&	E[(\alpha + \delta{S} + \gamma{A} + \nu)  Z] - E[\alpha + \delta{S} + \gamma{A} + \nu]E[Z] \\
+            &=& \{\alpha E(Z) - \alpha E(Z) \} + \delta \{ E(SZ) - E(S)E(Z)\} \\
+            && + \gamma \{E(AZ) - E(A)E(Z) \} + E(\nu Z) - E(\nu)E(Z) \\
+    Cov(Y,Z)	&=& \delta Cov(S,Z) + \gamma Cov(A,Z) + Cov(\nu,Z)
+    \end{eqnarray*}
+    Divide ambos lados por $Cov(S,Z)$ y el primer término se convierte en $\delta$, el LHS se convierte en el cociente de la forma reducida respecto al primer paso, más dos términos escalados adicionales.
 \end{frame}
 
-\begin{frame}{Consistency}
+\begin{frame}{Consistencia}
 
-	\begin{itemize}
-	\item What conditions must hold for a valid IV design?
-		\begin{itemize}
-		\item  $Cov(S,Z)\neq{0}$ -- ``first stage'' exists.  $S$ and $Z$ are correlated 
-		\item $Cov(A,Z)=Cov(\nu ,Z)=0$ -- ``exclusion restriction''.  This means $Z$ that orthogonal to the factors in $\nu$, such as unobserved ability, A, as well as the structural disturbance term, $\nu$
-		\end{itemize}
-	\item Combine $A$ and $\nu$ into a composite error term $\eta$ for simplicity
-	\item Assuming the first stage exists and that the exclusion restriction holds, then we can estimate $\delta$ with $\delta_{Wald}$:
-	\end{itemize}
-	\begin{eqnarray*}
-	\text{plim }\widehat{\delta}_{Wald}&=& \delta + \gamma \frac{Cov(\eta,Z)}{Cov(S,Z)} \\
-	&=&\delta
-	\end{eqnarray*}
+    \begin{itemize}
+    \item ¿Qué condiciones deben cumplirse para un diseño IV válido?
+        \begin{itemize}
+        \item  $Cov(S,Z)\neq{0}$ -- existe la ``primera etapa''. $S$ y $Z$ están correlacionados 
+        \item $Cov(A,Z)=Cov(\nu ,Z)=0$ -- ``restricción de exclusión''. Esto significa que $Z$ es ortogonal a los factores en $\nu$, como la habilidad no observada, $A$, así como al término de perturbación estructural, $\nu$
+        \end{itemize}
+    \item Combina $A$ y $\nu$ en un término de error compuesto $\eta$ para simplificar
+    \item Suponiendo que la primera etapa existe y que se cumple la restricción de exclusión, entonces podemos estimar $\delta$ con $\delta_{Wald}$:
+    \end{itemize}
+    \begin{eqnarray*}
+    \text{plim }\widehat{\delta}_{Wald}&=& \delta + \gamma \frac{Cov(\eta,Z)}{Cov(S,Z)} \\
+    &=&\delta
+    \end{eqnarray*}
 \end{frame}
 
 
-
-
-
-
-
-
-
-\begin{frame}{Two Sample IV}
+\begin{frame}{Dos muestras IV}
 
 	\begin{itemize}
-	\item Wald can be implemented in exotic ways, even across datasets
+	\item El estimador de Wald se puede implementar de formas exóticas, incluso entre diferentes conjuntos de datos:
 		\begin{enumerate}
-		\item Dataset 1 needs information on the outcome and the instrument -- Cov(Y,Z)
-		\item Dataset 2 needs  information on the treatment and the instrument -- Cov(D,Z)
+		\item El conjunto de datos 1 necesita información sobre el resultado y el instrumento -- $Cov(Y,Z)$
+		\item El conjunto de datos 2 necesita información sobre el tratamiento y el instrumento -- $Cov(D,Z)$
 		\end{enumerate}
-	\item This is known as ``Two sample IV'' because there are two \emph{samples} involved, rather than the traditional one sample.
-	\item Once we define what IV is measuring carefully, you will see why this works.
+	\item Esto se conoce como ``IV de dos muestras'' porque involucra dos \emph{muestras} en lugar de la tradicional muestra única.
+	\item Una vez que definamos cuidadosamente lo que mide IV, verás por qué funciona.
 	\end{itemize}
 \end{frame}
 
 
-\begin{frame}{Two-stage least squares concepts}
-	
+\begin{frame}{Conceptos de mínimos cuadrados en dos etapas}
+
 	\begin{itemize}
-	\item Causal model.  Your main research question:$$Y_i=\alpha + \delta{S_i} + \eta_i$$
-	\item First-stage regression. Gets the name because of two-stage least squares:$$S_i = \gamma + \rho{Z_i} + \zeta_i$$
-	\item Second-stage regression. Notice the fitted values, $\widehat{S}$:$$Y_i=\beta + \delta{\widehat{S_i}}+\nu_i$$
-	\item Reduced form regression: $Y$ regressed onto the instrument:$$Y_i=\psi + \pi{Z_i} + \varepsilon_i$$
+	\item Modelo causal. Tu principal pregunta de investigación: $$Y_i=\alpha + \delta{S_i} + \eta_i$$
+	\item Regresión de primera etapa. Se llama así por los 2SLS: $$S_i = \gamma + \rho{Z_i} + \zeta_i$$
+	\item Regresión de segunda etapa. Nota los valores ajustados, $\widehat{S}$: $$Y_i=\beta + \delta{\widehat{S_i}} + \nu_i$$
+	\item Regresión en forma reducida: $Y$ es regresado sobre el instrumento: $$Y_i=\psi + \pi{Z_i} + \varepsilon_i$$
 	\end{itemize}
 \end{frame}
 
 
+\begin{frame}{Lenguaje de mínimos cuadrados en dos etapas}
 
-
-
-
-
-
-\begin{frame}{Two-stage least squares language}
-
-Suppose you have a sample of data on $Y$, $S$, and $Z$. For each observation $i$ we assume the data are generated according to
+Supongamos que tienes una muestra de datos sobre $Y$, $S$, y $Z$. Para cada observación $i$, asumimos que los datos se generan de acuerdo a:
 		\begin{eqnarray*}
-		Y_i &=& \alpha + \delta{S}_i + \eta_i \text{ (causal model)}\\
-		S_i &=& \gamma + \rho{Z}_i + \zeta_i \text{ (first stage)} 
-		\end{eqnarray*}where $Cov(Z,\eta_i)=0$ (strangeness, hereafter exclusion) and $\rho\neq{0}$ (relevance, hereafter non-zero first stage)
-
+		Y_i &=& \alpha + \delta{S}_i + \eta_i \text{ (modelo causal)}\\
+		S_i &=& \gamma + \rho{Z}_i + \zeta_i \text{ (primera etapa)}
+		\end{eqnarray*} 
+donde $Cov(Z,\eta_i)=0$ (exogeneidad, también conocida como exclusión) y $\rho\neq{0}$ (relevancia, también conocida como primera etapa diferente de cero).
 \end{frame}
 
-\begin{frame}{Two-stage least squares language}
+
+\begin{frame}{Lenguaje de mínimos cuadrados en dos etapas}
 
 		\begin{eqnarray*}
-		Y_i&=&\psi + \pi{Z_i} + \varepsilon_i \text{ (reduced form)} \\
-		S_i &=& \gamma + \rho{Z}_i + \zeta_i \text{ (first stage)} 
+		Y_i &=& \psi + \pi{Z_i} + \varepsilon_i \text{ (forma reducida)} \\
+		S_i &=& \gamma + \rho{Z}_i + \zeta_i \text{ (primera etapa)}
 		\end{eqnarray*}
 		
 		\bigskip
 		
-We can calculate the ratio of ``reduced form'' ($\pi$) to ``first stage'' coefficient ($\rho$) using the Wald IV estimator:
+Podemos calcular el cociente de la ``forma reducida'' ($\pi$) y el coeficiente de la ``primera etapa'' ($\rho$) utilizando el estimador IV de Wald:
 		\begin{eqnarray*}
-		\widehat{\delta}_{Wald} = \frac{ Cov(Z,Y)} {Cov(Z,S)} = \frac{ \frac{Cov(Z,Y)}{Var(Z)}}{ \frac{Cov(Z,S)}{Var(Z)}} = \frac{\widehat{\pi}}{\widehat{\rho}}
+		\widehat{\delta}_{Wald} = \frac{ Cov(Z,Y)}{Cov(Z,S)} = \frac{ \frac{Cov(Z,Y)}{Var(Z)}}{ \frac{Cov(Z,S)}{Var(Z)}} = \frac{\widehat{\pi}}{\widehat{\rho}}
 		\end{eqnarray*}
-
 \end{frame}
 
+\begin{frame}{Dos etapas mínimos cuadrados}
+    Continuación de la diapositiva anterior
+    \bigskip
 
+    \begin{eqnarray*}
+        \widehat{\delta}_{Wald} = \frac{Cov(Z,Y)}{Cov(Z,S)} = \frac{\frac{Cov(Z,Y)}{Var(Z)}}{\frac{Cov(Z,S)}{Var(Z)}} = \frac{\widehat{\pi}}{\widehat{\rho}}
+    \end{eqnarray*}
 
-\begin{frame}{Two-stage least squares}
+    \bigskip
 
-Carry over from previous slide
-
-\bigskip
-
-		\begin{eqnarray*}
-		\widehat{\delta}_{Wald} = \frac{ Cov(Z,Y)} {Cov(Z,S)} = \frac{ \frac{Cov(Z,Y)}{Var(Z)}}{ \frac{Cov(Z,S)}{Var(Z)}} = \frac{\widehat{\pi}}{\widehat{\rho}}
-		\end{eqnarray*}
-
-\bigskip
-
-Rewrite $\widehat{\rho}$ as\begin{eqnarray*}
-	\widehat{\rho} &=&  \frac{Cov(Z,S)}{Var(Z)} \\
-\widehat{\rho}Var(Z)	&=& Cov(Z,S) 
-	\end{eqnarray*}
-
+    Reescribimos $\widehat{\rho}$ como
+    \begin{eqnarray*}
+        \widehat{\rho} &=&  \frac{Cov(Z,S)}{Var(Z)} \\
+        \widehat{\rho}Var(Z) &=& Cov(Z,S)
+    \end{eqnarray*}
 \end{frame}
 
+\begin{frame}{Dos etapas mínimos cuadrados}
+    Multiplicamos el estimador IV de Wald por $\frac{\widehat{\rho}}{\widehat{\rho}}$ (también nota el subíndice: ahora nos estamos moviendo hacia 2SLS)
 
-\begin{frame}{Two-stage least squares}
+    \begin{eqnarray*}
+        \widehat{\delta}_{2sls} &=& \frac{Cov(Z,Y)}{Cov(Z,S)} = \frac{\widehat{\rho}Cov(Z,Y)}{\widehat{\rho}Cov(Z,S)}
+    \end{eqnarray*}
 
-Multiply Wald IV by $\frac{\widehat{\rho}}{\widehat{\rho}}$  (also note the subscript -- we are moving now into 2SLS)
+    Sustituimos $Cov(Z,S) = \widehat{\rho}Var(Z)$ y simplificamos, ya que las constantes desaparecen en covarianza y varianza
 
-	\begin{eqnarray*}
-	\widehat{\delta}_{2sls} &=& \frac{ Cov(Z,Y)}{ Cov(Z,S)} = \frac{\widehat{\rho}Cov(Z,Y)}{\widehat{\rho}Cov(Z,S)} \\
-	\end{eqnarray*}
-
-Substitute $Cov(Z,S) = \widehat{\rho}Var(Z) $ and simplify as constants disappear in covariance and variance
-
-	\begin{eqnarray*}
-	\widehat{\delta}_{2sls} &=& \frac{\widehat{\rho}Cov(Z,Y)}{\widehat{\rho}Cov(Z,S)} = \frac{\widehat{\rho}Cov(Z,Y)}{\widehat{\rho}^2Var(Z)}  \\
-	&=&\frac{Cov(\widehat{\rho}Z,Y)}{Var(\widehat{\rho}Z)} 
-	\end{eqnarray*}
-
+    \begin{eqnarray*}
+        \widehat{\delta}_{2sls} &=& \frac{\widehat{\rho}Cov(Z,Y)}{\widehat{\rho}^2Var(Z)}  \\
+        &=&\frac{Cov(\widehat{\rho}Z,Y)}{Var(\widehat{\rho}Z)}
+    \end{eqnarray*}
 \end{frame}
 
-\begin{frame}{Two-stage least squares}
-	
-Recall $$ S_i = \gamma + \rho{Z}_i + \zeta_i \text{ (first stage)} $$So after estimation, we get $$\widehat{S}=\widehat{\gamma} + \widehat{\rho}Z \text{ (fitted values)}$$  
-Substitute for $\widehat{S}$ for $\widehat{\rho}Z$ ($\widehat{\gamma}$ drops out)
-		\begin{eqnarray*}
-		\widehat{\delta}_{2sls} &=& \frac{Cov(\widehat{\rho}Z,Y)}{Var(\widehat{\rho}Z)} =  \frac{Cov(\widehat{S},Y)}{Var(\widehat{S})}
-		\end{eqnarray*}
-		
-		
+\begin{frame}{Dos etapas mínimos cuadrados}
+    Recordemos
+    $$ S_i = \gamma + \rho{Z}_i + \zeta_i \text{ (primera etapa)} $$
 
+    Así que, después de la estimación, obtenemos
+    $$\widehat{S}=\widehat{\gamma} + \widehat{\rho}Z \text{ (valores ajustados)}$$  
+
+    Sustituimos $\widehat{S}$ por $\widehat{\rho}Z$ (el término $\widehat{\gamma}$ desaparece)
+
+    \begin{eqnarray*}
+        \widehat{\delta}_{2sls} &=& \frac{Cov(\widehat{\rho}Z,Y)}{Var(\widehat{\rho}Z)} =  \frac{Cov(\widehat{S},Y)}{Var(\widehat{S})}
+    \end{eqnarray*}
 \end{frame}
 
 \begin{frame}[plain]
-
-		\begin{proof}
-		We will show that $\widehat{\delta}Cov(Y,Z) = Cov(\widehat{S},Y)$.  I will leave it to you to show that $Var(\widehat{\delta}Z) = Var(\widehat{S})$
-		\begin{eqnarray*}
-		Cov(\widehat{S},Y) &=& E[\widehat{S}Y] - E[\widehat{S}]E[Y] \\
-		&=& E(Y[\widehat{\rho} + \widehat{\delta}Z]) - E(Y)E(\widehat{\rho} + \widehat{\delta}Z) \\
-		&=& \widehat{\rho}E(Y) + \widehat{\delta}E(YZ) - \widehat{\rho}E(Y) - \widehat{\delta}E(Y)E(Z) \\
-		&=&\widehat{\delta}[E(YZ) - E(Y)E(Z)] \\
-		Cov(\widehat{S},Y) &=& \widehat{\delta}Cov(Y,Z)
-		\end{eqnarray*}
-		\qedhere
-		\end{proof}
-
+    \begin{proof}
+        Demostraremos que $\widehat{\rho}Cov(Y,Z) = Cov(\widehat{S},Y)$. Te dejaré a ti demostrar que $Var(\widehat{\rho}Z) = Var(\widehat{S})$.
+        \begin{eqnarray*}
+            Cov(\widehat{S},Y) &=& E[\widehat{S}Y] - E[\widehat{S}]E[Y] \\
+            &=& E(Y[\widehat{\delta} + \widehat{\rho}Z]) - E(Y)E(\widehat{\delta} + \widehat{\rho}Z) \\
+            &=& \widehat{\delta}E(Y) + \widehat{\rho}E(YZ) - \widehat{\delta}E(Y) - \widehat{\rho}E(Y)E(Z) \\
+            &=& \widehat{\rho}[E(YZ) - E(Y)E(Z)] \\
+            Cov(\widehat{S},Y) &=& \widehat{\rho}Cov(Y,Z)
+        \end{eqnarray*}
+        \qedhere
+    \end{proof}
 \end{frame}
 
-
-\begin{frame}{Intuition of 2SLS}
-	
-	\begin{itemize}
-	\item Intuition is that 2SLS replaces $S$ with the fitted values $\widehat{S}$ from the first stage regression of $S$ onto $Z$ and all other covariates 
-	\item Our previous slides showed that 2SLS and the ratio of reduced form and first stage were equivalent though
-	\item By using the fitted values of the endogenous regressor from the first stage regression, our regression now uses \emph{only} the quasi-random variation in the treatment due to the instrumental variable itself (only the random parts of schooling remain)
-	\end{itemize}
+\begin{frame}{Intuición de 2SLS}
+    \begin{itemize}
+        \item La intuición es que 2SLS reemplaza $S$ con los valores ajustados $\widehat{S}$ de la regresión de primera etapa de $S$ sobre $Z$ y todas las demás covariables.
+        \item Nuestras diapositivas anteriores mostraron que 2SLS y la razón de forma reducida y primera etapa eran equivalentes.
+        \item Al usar los valores ajustados del regresor endógeno de la regresión de primera etapa, nuestra regresión ahora utiliza \emph{solo} la variación cuasi-aleatoria en el tratamiento debido a la variable instrumental misma (solo quedan las partes aleatorias de la educación).
+    \end{itemize}
 \end{frame}
 
 
 
+% \begin{frame}{Finite sample problems with 2SLS}
+
+% Suppose you have a sample of data on $Y$, $X$, and $Z$. For each observation $i$ we assume the data are generated according to
+% 		\begin{eqnarray*}
+% 		Y_i &=& \alpha + \delta{S}_i + \eta_i \\
+% 		S_i &=& \gamma + \rho{Z}_i + \zeta_i
+% 		\end{eqnarray*}where $Cov(Z,\eta_i)=0$ and $\rho\neq{0}$.
+
+% \end{frame}
 
 
+% \begin{frame}{Finite sample problems with 2SLS}
+
+% Plug in covariance and write out the following:
+% 		\begin{eqnarray*}
+% 		\widehat{\delta_{2sls}} &=& \frac{Cov(Z,Y)}{Cov(Z,S)} \\
+% 		&=& \frac{ \frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})(Y_i - \overline{Y})}{\frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})(S_i - \overline{S})} \\
+% 		&=& \frac{ \frac{1}{n} \sum_{i=1}^n(Z_i - \overline{Z})Y_i}{ \frac{1}{n} \sum_{i=1}^n (Z_i-\overline{Z})S_i}
+% 		\end{eqnarray*}
+
+% \end{frame}
+
+% \begin{frame}{Finite sample problems with 2SLS}
+
+% Substitute the causal model definition of $Y$ to get:
+% 		\begin{eqnarray*}
+% 		\widehat{\delta_{2sls} }&=& \frac{ \frac{1}{n} \sum_{i=1}^n (Z_i -\overline{Z})\{ \alpha + \delta{S}_i + \eta_i \}}{\frac{1}{n} \sum_{i=1}^n (Z_i - \overline{Z})S_i} \\
+% 		&=& \delta + \frac{\frac{1}{n} (Z_i - \overline{Z})\eta_i}{\frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})S_i} \\
+% 		&=& \delta + \text{"small if \emph{n} is large"}
+% 		\end{eqnarray*}Where did the first term go? Why did the second term become $\delta$? Why might the second term not be zero even under exclusion?
+
+% \end{frame}	
 
 
-
-\begin{frame}{Finite sample problems with 2SLS}
-
-Suppose you have a sample of data on $Y$, $X$, and $Z$. For each observation $i$ we assume the data are generated according to
-		\begin{eqnarray*}
-		Y_i &=& \alpha + \delta{S}_i + \eta_i \\
-		S_i &=& \gamma + \rho{Z}_i + \zeta_i
-		\end{eqnarray*}where $Cov(Z,\eta_i)=0$ and $\rho\neq{0}$.
-
+\begin{frame}{Intuición de 2SLS}
+    \begin{itemize}
+        \item Los mínimos cuadrados en dos etapas son interesantes porque, además de ser un estimador, contienen una gran intuición que puedes usar como una herramienta para pensar sobre las variables instrumentales (IV) de manera más general.
+        \item La intuición es que el estimador 2SLS reemplaza $S$ con los valores ajustados de $S$ (es decir, $\widehat{S}$) de la regresión de primera etapa de $S$ sobre $Z$ y todas las demás covariables.
+        \item Al usar los valores ajustados del regresor endógeno de la regresión de primera etapa, nuestra regresión ahora utiliza \emph{solo} la variación exógena en el regresor debido a la variable instrumental misma.
+    \end{itemize}
 \end{frame}
 
-
-\begin{frame}{Finite sample problems with 2SLS}
-
-Plug in covariance and write out the following:
-		\begin{eqnarray*}
-		\widehat{\delta_{2sls}} &=& \frac{Cov(Z,Y)}{Cov(Z,S)} \\
-		&=& \frac{ \frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})(Y_i - \overline{Y})}{\frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})(S_i - \overline{S})} \\
-		&=& \frac{ \frac{1}{n} \sum_{i=1}^n(Z_i - \overline{Z})Y_i}{ \frac{1}{n} \sum_{i=1}^n (Z_i-\overline{Z})S_i}
-		\end{eqnarray*}
-
+\begin{frame}{Intuición de IV en 2SLS}
+    \begin{itemize}
+        \item \dots pero piénsalo: esa variación estaba ahí antes, pero era solo un subconjunto de toda la variación en el regresor.
+        \item Regresando a lo que dijimos al principio: necesitamos que la variable endógena tenga partes que sean aleatorias, y la IV las encuentra.
+        \item Por lo tanto, las variables instrumentales reducen la variación en los datos, pero la variación que queda es \emph{exógena}.
+    \end{itemize}
 \end{frame}
 
-\begin{frame}{Finite sample problems with 2SLS}
-
-Substitute the causal model definition of $Y$ to get:
-		\begin{eqnarray*}
-		\widehat{\delta_{2sls} }&=& \frac{ \frac{1}{n} \sum_{i=1}^n (Z_i -\overline{Z})\{ \alpha + \delta{S}_i + \eta_i \}}{\frac{1}{n} \sum_{i=1}^n (Z_i - \overline{Z})S_i} \\
-		&=& \delta + \frac{\frac{1}{n} (Z_i - \overline{Z})\eta_i}{\frac{1}{n}\sum_{i=1}^n(Z_i - \overline{Z})S_i} \\
-		&=& \delta + \text{"small if \emph{n} is large"}
-		\end{eqnarray*}Where did the first term go? Why did the second term become $\delta$? Why might the second term not be zero even under exclusion?
-
-\end{frame}	
-
-
-\begin{frame}{Intuition of 2SLS}
-	
-	\begin{itemize}
-	\item Two stage least squares is nice because in addition to being an estimator, there's also great intuition contained in it which you can use as a device for thinking about IV more generally. 
-	\item The intuition is that 2SLS estimator replaces $S$ with the fitted values of $S$ (i.e., $\widehat{S}$) from the first stage regression of $S$ onto $Z$ and all other covariates.  
-	\item By using the fitted values of the endogenous regressor from the first stage regression, our regression now uses \emph{only} the exogenous variation in the regressor due to the instrumental variable itself
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{Intuition of IV in 2SLS}
-
-\begin{itemize}
-	\item \dots but think about it -- that variation was there before, but was just a subset of all the variation in the regressor
-	\item Go back to what we said in the beginning - we need the endogenous variable to have pieces that are random, and IV finds them.
-	\item Instrumental variables therefore reduces the variation in the data, but that variation which is left is 
-\emph{exogenous}
-\end{itemize}
-
-\end{frame}
 	
 
 
@@ -614,7 +1177,7 @@ Probably not a bad idea to estimate both reduced form and first stage, just to c
 
 \begin{itemize}
 	\item Estimate this in Stata using -ivregress 2sls-.
-	\item Estimate this in R -ivreg()- which is in the AER package
+	\item Estimate this in \texttt{R -ivreg()- } which is in the AER package
 	\item Lots of options, like -linearmodels-, in python
 
 \end{itemize}
@@ -623,30 +1186,30 @@ Probably not a bad idea to estimate both reduced form and first stage, just to c
 
 
 
-\subsection{Weak instruments}
+\subsection{Instrumentos débiles}
 
-\begin{frame}{Weak instruments}
+\begin{frame}{Instrumentos débiles}
 
 \begin{quote}
-``In instrumental variables regression, the instruments are called weak if their correlation with the endogenous regressors, conditional on any controls, is close to zero.'' -- Andrews, Stock and Sun (2018)
+``En la regresión por variables instrumentales, los instrumentos se denominan débiles si su correlación con los regresores endógenos, condicionada a cualquier control, está cerca de cero.'' -- Andrews, Stock y Sun (2018)
 \end{quote}
 
 \end{frame}
 
-\begin{frame}{Weak instruments}
+\begin{frame}{Instrumentos débiles}
 
 \begin{itemize}
-\item Whereas exclusion restriction is not testable, the non-zero first stage 
-\item Weak instruments can happen if the two variables are independent or the sample is small
-\item If you have a weak instrument, then the bias of 2SLS is centered on the bias of OLS and the cure ends up being worse than the disease
-\item This brought into sharp focus with Angrist and Krueger (1991) quarter of birth study and some papers that followed
+\item Mientras que la restricción de exclusión no es verificable, la primera etapa no es cero.
+\item Los instrumentos débiles pueden ocurrir si las dos variables son independientes o si la muestra es pequeña.
+\item Si tienes un instrumento débil, entonces el sesgo de 2SLS se centra en el sesgo de OLS y la solución termina siendo peor que la enfermedad.
+\item Esto se evidenció con el estudio de trimestre de nacimiento de Angrist y Krueger (1991) y algunos trabajos que siguieron.
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{My March 2022 Interview with Angrist}
+\begin{frame}{Entrevista de marzo de 2022 con Angrist}
 
-Before we dive into the paper, though, let's listen to Angrist discuss the history
+Antes de sumergirnos en el artículo, escuchemos a Angrist discutir la historia.
 
 \bigskip
 
@@ -654,30 +1217,29 @@ Before we dive into the paper, though, let's listen to Angrist discuss the histo
 
 \bigskip
 
-Somewhat inspiring to hear how Angrist reframed the weak instrument problem which his paper with Krueger brought into crisp focus
+Es algo inspirador escuchar cómo Angrist reformuló el problema de los instrumentos débiles que su artículo con Krueger trajo a un enfoque claro.
 
 \end{frame}
 
 
-\begin{frame}{Angrist and Krueger (1991)}
+\begin{frame}{Angrist y Krueger (1991)}
 	
 	\begin{itemize}
-	\item In practice, it is often difficult to find convincing instruments -- usually because potential instruments don't satisfy the exclusion restriction
-	\item But in an early paper in the causal inference movement, Angrist and Krueger (1991) wrote a very interesting and influential study instrumental variable 
-	\item They were interested in schooling's effect on earnings and instrumented for it with \emph{which quarter of the year you were born}
-	\item Remember ``strangeness principle'' - why would birth quarter cause earnings in the reduced form?
+	\item En la práctica, a menudo es difícil encontrar instrumentos convincentes, generalmente porque los instrumentos potenciales no satisfacen la restricción de exclusión.
+	\item Pero en un artículo temprano en el movimiento de inferencia causal, Angrist y Krueger (1991) escribieron un estudio muy interesante e influyente sobre variables instrumentales.
+	\item Les interesaba el efecto de la educación en los ingresos y utilizaron como instrumento \emph{el trimestre del año en que naciste}.
+	\item Recuerda el ``principio de extrañeza'' - ¿por qué el trimestre de nacimiento causaría ingresos en la forma reducida?
 	\end{itemize}
 	
 \end{frame}
 
-
-\begin{frame}{Compulsory schooling}
+\begin{frame}{Educación obligatoria}
 
 \begin{itemize}
 
-	\item In the US, you could drop out of school once you turned 16
-	\item ``School districts typically require a student to have turned age six by January 1 of the year in which he or she enters school'' (Angrist and Krueger 1991, p. 980)
-	\item Children have different ages when they start school, though, and this creates different lengths of schooling at the time they turn 16 (potential drop out age):
+	\item En los EE. UU., podrías abandonar la escuela una vez que cumplieras 16 años.
+	\item ``Los distritos escolares normalmente requieren que un estudiante haya cumplido seis años el 1 de enero del año en que ingresa a la escuela'' (Angrist y Krueger 1991, p. 980).
+	\item Sin embargo, los niños tienen diferentes edades al comenzar la escuela, y esto crea diferentes duraciones de la educación en el momento en que cumplen 16 años (edad potencial de abandono):
 	\end{itemize}
 	
 \end{frame}
@@ -689,14 +1251,14 @@ Somewhat inspiring to hear how Angrist reframed the weak instrument problem whic
 	\draw [-{latex}] (0,2) -- (12,2);
 	\draw [-{latex}] (1,0) -- (12,0);
 	
-	\draw (0,1.9) -- (0,2.1) node [anchor=south, pos=1, text width=2cm, align=center, font=\small] {Born\\ Dec};
-	\draw (4.2,1.9) -- (4.2,2.1) node [anchor=south, pos=1, text width=2cm, align=center, font=\small] {Turn\\ 6};
-	\draw (5.2,1.9) -- (5.2,2.1) node [anchor=south, pos=1, text width=2cm, align=center, font=\small] {Start\\ School};
+	\draw (0,1.9) -- (0,2.1) node [anchor=south, pos=1, text width=2cm, align=center, font=\small] {Nacido\\ en dic};
+	\draw (4.2,1.9) -- (4.2,2.1) node [anchor=south, pos=1, text width=2cm, align=left, font=\small] {Cumple\\ 6};
+	\draw (5.2,1.9) -- (5.2,2.1) node [anchor=south, pos=1, text width=2cm, align=right, font=\small] {Comienza\\ Escuela};
 	\draw (10,1.9) -- (10,2.1);
 	
-	\draw (1,-0.1) -- (1,0.1) node [anchor=north, pos=0, text width=2cm, align=center, font=\small] {Born\\ Jan};
-	\draw (4.9,-0.1) -- (4.9,0.1) node [anchor=north, pos=0, text width=2cm, align=center, font=\small] {Turn\\ 6};
-	\draw (5.9,-0.1) -- (5.9,0.1) node [anchor=north, pos=0, text width=2cm, align=center, font=\small] {Start\\ School};
+	\draw (1,-0.1) -- (1,0.1) node [anchor=north, pos=0, text width=2cm, align=center, font=\small] {Nacido\\ en ene};
+	\draw (4.9,-0.1) -- (4.9,0.1) node [anchor=north, pos=0, text width=2cm, align=left, font=\small] {Cumple\\ 6};
+	\draw (5.9,-0.1) -- (5.9,0.1) node [anchor=north, pos=0, text width=2cm, align=right, font=\small] {Comienza\\ Escuela};
 	\draw (10,-0.1) -- (10,0.1) node [anchor=north, pos=0, text width=2cm, align=center, font=\small] {16};
 	
 	\draw [dashed] (4.55,-0.125) -- (4.55,2.125);
@@ -708,24 +1270,23 @@ Somewhat inspiring to hear how Angrist reframed the weak instrument problem whic
 \end{tikzpicture}
 
 \end{figure}
-If you're born in the fourth quarter, you hit 16 with more schooling than those born in the first quarter
+Si naciste en el cuarto trimestre, cumples 16 años con más educación que aquellos nacidos en el primer trimestre.
 \end{frame}
 
-\begin{frame}{Visuals}
+
+\begin{frame}{Visuales}
 
 \begin{itemize}
-\item You need good data visualization for IV partly because of the scrutiny around the design
-\item The two pieces you should be ready to build pictures for are the first stage and the reduced form
-\item Angrist and Krueger (1991) provide simple, classic and compelling pictures of both
+\item Necesitas una buena visualización de datos para variables instrumentales, en parte debido al escrutinio en torno al diseño.
+\item Las dos partes para las que deberías estar listo para construir gráficos son la primera etapa y la forma reducida.
+\item Angrist y Krueger (1991) proporcionan imágenes simples, clásicas y convincentes de ambas.
 \end{itemize}
 
 \end{frame}
 
-
-
-\begin{frame}{First Stage}
+\begin{frame}{Primera etapa}
 	
-	 Men born earlier in the year have lower schooling. This indicates that there is a first stage. Notice all the 3s and 4s at the top. But then notice how it attenuates over time \dots
+	Los hombres nacidos a principios del año tienen menos educación. Esto indica que hay una primera etapa. Observa todos los 3 y 4 en la parte superior. Pero luego observa cómo se atenúa con el tiempo \dots
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/qob_2.pdf}
@@ -733,10 +1294,9 @@ If you're born in the fourth quarter, you hit 16 with more schooling than those 
 	
 \end{frame}
 
-
-\begin{frame}{Reduced Form}
+\begin{frame}{Forma reducida}
 	
-	 Do differences in schooling due to different quarter of birth translate into different earnings?
+	¿Las diferencias en educación debido a diferentes trimestres de nacimiento se traducen en diferentes ingresos?
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/qob_3.pdf}
@@ -744,31 +1304,30 @@ If you're born in the fourth quarter, you hit 16 with more schooling than those 
 	
 \end{frame}
 
-\begin{frame}{Two Stage Least Squares model}
+\begin{frame}{Modelo de Mínimos Cuadrados en Dos Etapas}
 	
 	\begin{itemize}
-	\item The causal model is $$Y_i = X \pi + \delta S_i + \varepsilon$$
-	\item The first stage regression is:$$S_i=X\pi_{10} + \pi_{11}Z_i + \eta_{1i}$$
-	\item The reduced form regression is:$$Y_i=X\pi_{20} + \pi_{21}Z_i+\eta_{2i}$$
-	\item The sample analog of the Wald estimator that adjusts for covariates: $\frac{\pi_{21}}{\pi_{11}}$
+	\item El modelo causal es $$Y_i = X \pi + \delta S_i + \varepsilon$$
+	\item La regresión de la primera etapa es: $$S_i=X\pi_{10} + \pi_{11}Z_i + \eta_{1i}$$
+	\item La regresión de la forma reducida es: $$Y_i=X\pi_{20} + \pi_{21}Z_i+\eta_{2i}$$
+	\item El análogo de muestra del estimador de Wald que ajusta por covariables: $\frac{\pi_{21}}{\pi_{11}}$
 	\end{itemize}
 
 \end{frame}
 
-\begin{frame}{Two Stage Least Squares}
+\begin{frame}{Mínimos Cuadrados en Dos Etapas}
 	
 	\begin{itemize}
-	\item Angrist and Krueger instrument for schooling using three quarter of birth dummies:  a dummies for 1st, 2nd and 3rd qob
-	\item Their initial  first-stage regression is:$$S_i=X\pi_{10} + Z_{1i}\pi_{11} + Z_{2i}\pi_{12} + Z_{3i}\pi_{13}+\eta_1$$
-	\item The second stage is the same as before (including all controls $X$), but the fitted values are from the new first stage $$Y_i = X \pi + \delta \widehat{S_i} + \epsilon$$
+	\item Angrist y Krueger instrumentan la educación utilizando tres variables ficticias para trimestre de nacimiento: una variable ficticia para el primer, segundo y tercer trimestre.
+	\item Su regresión inicial de primera etapa es: $$S_i=X\pi_{10} + Z_{1i}\pi_{11} + Z_{2i}\pi_{12} + Z_{3i}\pi_{13}+\eta_1$$
+	\item La segunda etapa es la misma que antes (incluyendo todos los controles $X$), pero los valores ajustados son de la nueva primera etapa $$Y_i = X \pi + \delta \widehat{S_i} + \epsilon$$
 	\end{itemize}
 
 \end{frame}
 
+\begin{frame}{Resultados de la regresión de la primera etapa}
 
-\begin{frame}{First stage regression results}
-
-	 Quarter of birth is a strong predictor of total years of education
+	El trimestre de nacimiento es un fuerte predictor del total de años de educación.
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/qob_5.pdf}
@@ -776,10 +1335,7 @@ If you're born in the fourth quarter, you hit 16 with more schooling than those 
 
 \end{frame}
 
-
-
-
-\begin{frame}{IV Estimates Birth Cohorts 20-29, 1980 Census}
+\begin{frame}{Estimaciones IV Cohortes de Nacimiento 20-29, Censo de 1980}
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/qob_7.pdf}
@@ -790,201 +1346,178 @@ If you're born in the fourth quarter, you hit 16 with more schooling than those 
 
 
 
-\begin{frame}{180 instruments}
+\begin{frame}{180 instrumentos}
 
 \begin{itemize}
-\item To improve precision in their two stage least squares model, they include more instruments (causes 40 percent reduction in standard errors in 2SLS)
-\item More instruments can increase variation in the predicted schooling variable, lowering standard errors and tightening confidence intervals
-\item Three QoB dummies interacted with 50 state-of-birth dummies plus 3 QoB dummies interacted with 9 year-of-birth dummies (180 instruments)
-\item Includes 50 state-of-birth dummies so variability in education in 2SLS is solely due to differences in seasons of birth and this is allowed to vary by state and birth year for the first time
+\item Para mejorar la precisión en su modelo de mínimos cuadrados en dos etapas, incluyen más instrumentos (lo que causa una reducción del 40 por ciento en los errores estándar en 2SLS).
+\item Más instrumentos pueden aumentar la variación en la variable de educación predicha, reduciendo los errores estándar y estrechando los intervalos de confianza.
+\item Tres variables ficticias de trimestre de nacimiento interaccionadas con 50 variables ficticias de estado de nacimiento más 3 variables ficticias de trimestre de nacimiento interaccionadas con 9 variables ficticias de año de nacimiento (180 instrumentos).
+\item Incluye 50 variables ficticias de estado de nacimiento, por lo que la variabilidad en la educación en 2SLS se debe únicamente a diferencias en las estaciones de nacimiento, y esto se permite variar por estado y año de nacimiento por primera vez.
 \end{itemize}
 
 \end{frame}
 
-%	\begin{figure}
-%	\includegraphics[scale=.25]{./lecture_includes/weak_qob1.png}
-%	\end{figure}
-	
-
-
-
-
-
-%\begin{frame}{More instruments}
-
-%	\begin{figure}
-%	\includegraphics[scale=.25]{./lecture_includes/weak_qob2.png}
-%	\end{figure}
-	
-
-%\end{frame}
-
-
-\begin{frame}{More instruments}
+\begin{frame}{Más instrumentos}
 
 	\begin{figure}
 	\includegraphics[scale=.18]{./lecture_includes/weak_qob3.png}
 	\end{figure}
 	
-
 \end{frame}
 
-
-\begin{frame}{Weak Instruments}
+\begin{frame}{Instrumentos débiles}
 	
 	\begin{itemize}
-	\item Important paper suggesting OLS and 2SLS were pretty similar, plus introduces modern notion of seeking ``plausibly exogenous instruments''
-	\item But in the early 1990s, a number of papers showed that IV can be \emph{severely} biased with weak instruments and many instruments for one endogenous variable
-	\item In the worst case, if the instruments are so weak that there is no first stage, then the 2SLS sampling distribution is centered on the probability limit of OLS
+	\item Un artículo importante sugiere que OLS y 2SLS son bastante similares, además de introducir la noción moderna de buscar ``instrumentos plausiblemente exógenos''.
+	\item Pero a principios de los años 90, varios artículos mostraron que IV puede estar \emph{severamente} sesgado con instrumentos débiles y muchos instrumentos para una variable endógena.
+	\item En el peor de los casos, si los instrumentos son tan débiles que no hay una primera etapa, entonces la distribución de muestreo de 2SLS se centra en el límite de probabilidad de OLS.
 	\end{itemize}
 \end{frame}
 
-
-
-\begin{frame}{Matrices and instruments}
+\begin{frame}{Matrices e instrumentos}
 
 \begin{itemize}
-	\item The causal model of interest is: $$Y=\beta X + \nu$$
-	\item Matrix of instrumental variables is Z with the first stage equation:$$X = {Z'}\pi + \eta$$
+	\item El modelo causal de interés es: $$Y=\beta X + \nu$$
+	\item La matriz de variables instrumentales es Z con la ecuación de la primera etapa: $$X = {Z'}\pi + \eta$$
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Weak instruments and bias towards OLS}
-
+\begin{frame}{Instrumentos débiles y sesgo hacia OLS}
 
 \begin{itemize}
-	\item If $\nu_i$ from causal model and $\eta_i$ from first stage model are correlated, then OLS estimated $\widehat{\beta}_{OLS}$ in causal model is biased
-	\item To show the bias of OLS, take the population mean difference in $\beta$ minus estimated $\beta_{OLS}$: $$E[\widehat{\beta}_{OLS} - \beta] = \frac{ Cov(\nu, X)}{Var(X)} = \frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$$
-	\item Our hope is that with 2SLS, we can drive this bias to zero in the finite sample and have a reasonably unbiased estimate of $\beta$ 
+	\item Si $\nu_i$ del modelo causal y $\eta_i$ del modelo de primera etapa están correlacionados, entonces el estimador OLS $\widehat{\beta}_{OLS}$ en el modelo causal está sesgado.
+	\item Para mostrar el sesgo de OLS, toma la diferencia media poblacional en $\beta$ menos el estimador $\beta_{OLS}$: $$E[\widehat{\beta}_{OLS} - \beta] = \frac{ Cov(\nu, X)}{Var(X)} = \frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$$
+	\item Nuestra esperanza es que con 2SLS, podamos llevar este sesgo a cero en la muestra finita y tener una estimación razonablemente no sesgada de $\beta$. 
 \end{itemize}
 
 \end{frame}
 
-
-\begin{frame}{Weak instruments and 2SLS bias towards OLS}
+\begin{frame}{Instrumentos débiles y sesgo de 2SLS hacia OLS}
 	
 	\begin{itemize}
-	\item Strong instruments shrink the bias term, $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$, to an inconsequential scaled value (but cannot go to zero)
-	\item We can derive the approximate bias of 2SLS as:$$E[\widehat{\beta}_{2SLS} - \beta] \approx \frac{\sigma_{\nu \eta}}{\sigma^2_\eta} \frac{1}{F+1}$$
-	\item Consider the intuition all that work bought us now: if the first stage is weak (i.e, $F\rightarrow{0}$), then the bias of 2SLS approaches $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$
+	\item Los instrumentos fuertes reducen el término de sesgo, $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$, a un valor escalado inconsecuente (pero no pueden llegar a cero).
+	\item Podemos derivar el sesgo aproximado de 2SLS como: $$E[\widehat{\beta}_{2SLS} - \beta] \approx \frac{\sigma_{\nu \eta}}{\sigma^2_\eta} \frac{1}{F+1}$$
+	\item Considera la intuición que todo ese trabajo nos proporcionó ahora: si la primera etapa es débil (es decir, $F\rightarrow{0}$), entonces el sesgo de 2SLS se aproxima a $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$.
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Weak instruments and bias towards OLS}
+\begin{frame}{Instrumentos débiles y sesgo hacia OLS}
 
 \begin{itemize}
-	\item This is the same as the OLS bias as for $\pi=0$ in the second equation on the earlier slide (i.e., there is no first stage relationship) $\sigma^2_x = \sigma^2_\eta$ and therefore the OLS bias $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$ becomes $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$.
-	\item But if the first stage is very strong ($F\rightarrow{\infty}$) then the 2SLS bias is approaching 0.
-	\item Cool thing is -- you can test this with an F test on the joint significance of $Z$ in the first stage
-	\item It's absolutely critical therefore that you choose instruments that are strongly correlated with the endogenous regressor, otherwise the cure is worse than the disease
+	\item Esto es lo mismo que el sesgo de OLS cuando $\pi=0$ en la segunda ecuación de la diapositiva anterior (es decir, no hay relación en la primera etapa) $\sigma^2_x = \sigma^2_\eta$ y, por lo tanto, el sesgo de OLS $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$ se convierte en $\frac{\sigma_{\nu \eta}}{\sigma^2_\eta}$.
+	\item Pero si la primera etapa es muy fuerte ($F\rightarrow{\infty}$), entonces el sesgo de 2SLS se aproxima a 0.
+	\item Lo interesante es que puedes probar esto con una prueba F sobre la significación conjunta de $Z$ en la primera etapa.
+	\item Por lo tanto, es absolutamente crítico que elijas instrumentos que estén fuertemente correlacionados con el regresor endógeno; de lo contrario, la cura es peor que la enfermedad.
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Weak Instruments - Adding More Instruments}
+
+\begin{frame}{Instrumentos débiles - Añadiendo más instrumentos}
 	
 	\begin{itemize}
-	\item Adding more weak instruments will increase the bias of 2SLS
+	\item Añadir más instrumentos débiles aumentará el sesgo de 2SLS
 		\begin{itemize}
-		\item By adding further instruments without predictive power, the first stage $F$-statistic goes toward zero and the bias increases
-		\item We will see this more closely when we cover the leniency design
+		\item Al agregar más instrumentos sin poder predictivo, el estadístico $F$ de la primera etapa tiende a cero y el sesgo aumenta
+		\item Veremos esto más de cerca cuando cubramos el diseño de indulgencia
 		\end{itemize}
-	\item If the model is ``just identified'' -- mean the same number of instrumental variables as there are endogenous covariates -- weak instrument bias is less of a problem
+	\item Si el modelo está ``exactamente identificado'' -- es decir, el mismo número de variables instrumentales que covariables endógenas -- el sesgo de instrumentos débiles es menos problemático
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Weak instrument problem}
+\begin{frame}{Problema de instrumentos débiles}
 
 \begin{itemize}
-	\item After Angrist and Krueger study, there were new papers highlighting issues related to weak instruments and finite sample bias
-	\item Key papers are Nelson and Startz (1990), Buse (1992), Bekker (1994) and especially Bound, Jaeger and Baker (1995)
-	\item Bound, Jaeger and Baker (1995) highlighted this problem for the Angrist and Krueger study.  
+	\item Después del estudio de Angrist y Krueger, surgieron nuevos artículos que destacan problemas relacionados con instrumentos débiles y sesgo en muestras finitas
+	\item Los artículos clave son Nelson y Startz (1990), Buse (1992), Bekker (1994) y especialmente Bound, Jaeger y Baker (1995)
+	\item Bound, Jaeger y Baker (1995) destacaron este problema para el estudio de Angrist y Krueger.  
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Bound, Jaeger and Baker (1995)}
+\begin{frame}{Bound, Jaeger y Baker (1995)}
 
-Remember, AK present findings from expanding their instruments to include many interactions (i.e., saturated model)
+Recuerda que AK presentan hallazgos de la expansión de sus instrumentos para incluir muchas interacciones (es decir, modelo saturado)
 		\begin{enumerate}
-		\item Quarter of birth dummies $\rightarrow$ 3 instruments
-		\item Quarter of birth dummies $+$ (quarter of birth) $\times$ (year of birth) $+$ (quarter of birth) $\times$ (state of birth) $\rightarrow$ 180 instruments
+		\item Variables ficticias de trimestre de nacimiento $\rightarrow$ 3 instrumentos
+		\item Variables ficticias de trimestre de nacimiento $+$ (trimestre de nacimiento) $\times$ (año de nacimiento) $+$ (trimestre de nacimiento) $\times$ (estado de nacimiento) $\rightarrow$ 180 instrumentos
 		\end{enumerate}
-So if any of these are weak, then the approximate bias of 2SLS gets worse
+Así que si alguno de estos es débil, entonces el sesgo aproximado de 2SLS empeora.
 
 \end{frame}
 
-
-\begin{frame}{Adding instruments in Angrist and Krueger}
+\begin{frame}{Añadiendo instrumentos en Angrist y Krueger}
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/ak_iv1.pdf}
 	\end{figure}
 	
-Adding more weak instruments reduced the first stage $F$-statistic and increases the bias of 2SLS. Notice its also moved closer to OLS. 
+Añadir más instrumentos débiles reduce el estadístico $F$ de la primera etapa y aumenta el sesgo de 2SLS. Observa que también se ha acercado a OLS. 
 	
 \end{frame}
 
-\begin{frame}{Adding instruments in Angrist and Krueger}
+\begin{frame}{Añadiendo instrumentos en Angrist y Krueger}
 	
 	\begin{figure}
 	\includegraphics{./lecture_includes/ak_iv2.pdf}
 	\end{figure}
 	
-More instruments increase precision, but drive down $F$, therefore we know the problem has gotten worse
+Más instrumentos aumentan la precisión, pero disminuyen $F$, por lo tanto, sabemos que el problema ha empeorado.
 	
 \end{frame}
 
 
 
 
-\begin{frame}{IV advice: Weak instruments}
+
+\begin{frame}{Consejos IV: Instrumentos débiles}
 
 	\begin{itemize}
-	\item Excellent review by Keane and Neal (2021) ``A Practical Guide to Weak Instruments''  as well as Andrews, Stock and Sun (2018)
-	\item Stock, Wright and Yogo (2002) found that $F$ statistics on the excludability of the instrument from the first stage greater than 10 performed well in Monte Carlos with homoskedasticity, but 2SLS is has poor properties here
+	\item Excelente revisión de Keane y Neal (2021) ``Una Guía Práctica para Instrumentos Débiles'', así como de Andrews, Stock y Sun (2018)
+	\item Stock, Wright y Yogo (2002) encontraron que los estadísticos $F$ sobre la excluibilidad del instrumento de la primera etapa mayores a 10 funcionaron bien en Monte Carlos con homocedasticidad, pero 2SLS tiene propiedades deficientes aquí
 		\begin{itemize}
-		\item Under powered
-		\item Artificially low standard errors when endogeneity is severe
-		\item This causes $t$-tests to be misleading
+		\item Bajo poder
+		\item Errores estándar artificialmente bajos cuando la endogeneidad es severa
+		\item Esto causa que las pruebas $t$ sean engañosas
 		\end{itemize}
 	\end{itemize}
 
 \end{frame}
 
-\begin{frame}{IV advice: Weak instruments}
+\begin{frame}{Consejos IV: Instrumentos débiles}
 
 \begin{quote}
-``In the leading case with a single endogenous regressor, we recommend that researchers judge instrument strength based on the effective F-statistic of Montiel Olea and Pflueger (2013).  If there is a single instrument, we recommend reporting identification robust Anderson-Rubin confidence intervals. These are effective regardless of the strength of the instruments, and so should be reported regardless of the value of the first stage F.  Finally, if there are multiple instruments, the literature has not yet converged on a single procedure, but we recommend choosing from among the several available robust procedures that are efficient when the instruments are strong.'' -- Andrews, Stock and Sun (2018)
+``En el caso principal con un solo regresor endógeno, recomendamos que los investigadores juzguen la fuerza del instrumento basado en el estadístico $F$ efectivo de Montiel Olea y Pflueger (2013). Si hay un solo instrumento, recomendamos informar intervalos de confianza robustos de Anderson-Rubin. Estos son efectivos independientemente de la fuerza de los instrumentos, y por lo tanto deberían ser informados sin importar el valor del $F$ de la primera etapa. Finalmente, si hay múltiples instrumentos, la literatura aún no ha convergido en un procedimiento único, pero recomendamos elegir entre los varios procedimientos robustos disponibles que son eficientes cuando los instrumentos son fuertes.'' -- Andrews, Stock y Sun (2018)
 \end{quote}
 
 \end{frame}
 
 
-\begin{frame}{IV advice: Weak instruments}
+\begin{frame}{Consejos IV: Instrumentos débiles}
 
 \begin{itemize}
-	\item Anderson-Rubin greatly alleviate this problem and should be used even with very strong instruments provided the first-stage $F$ is well above 10 (Lee, et al. 2020 say 104.7)
-	\item Higher thresholds are recommended, and even then robust tests are suggested unless $F$ is in the thousands
-	\item Keane and Neal (2021) write, ``to avoid over-rejecting the null when $\beta_{2SLS}$ is shifted in the direction of the OLS bias, one should rely on the Anderson-Rubin test rather than the $t$-test even when the first-stage $F$-statistic is in the thousands.'' 
+	\item Anderson-Rubin alivia en gran medida este problema y debería ser utilizado incluso con instrumentos muy fuertes siempre que el $F$ de la primera etapa esté bien por encima de 10 (Lee, et al. 2020 dice 104.7)
+	\item Se recomiendan umbrales más altos, y aun así se sugieren pruebas robustas a menos que el $F$ esté en los miles
+	\item Keane y Neal (2021) escriben: ``para evitar rechazar en exceso la nulidad cuando $\beta_{2SLS}$ se desplaza en la dirección del sesgo de OLS, uno debería confiar en la prueba de Anderson-Rubin en lugar de la prueba $t$ incluso cuando el estadístico $F$ de la primera etapa esté en los miles.'' 
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Heteroskedastic DGP}
+\begin{frame}{DGP heterocedástico}
 
 \begin{itemize}
-\item Assessing acceptable first stage $F$ statistics means in practice considering the impact of heteroskedasticity
-\item With multiple instruments, it is inappropriate to use either a conventional or heteroskedasticity robust $F$-tsest to gauge instrument strength
-\item Andrews, et al. (2019) suggest the Olea and Pflueger (2013) effective first-stage $F$ statistic
-\item Single instrument just-identified case reduces to the conventional robust $F$ and the Kleibergen and Paap (2006) Wald
+\item Evaluar los estadísticos $F$ aceptables de la primera etapa significa, en la práctica, considerar el impacto de la heterocedasticidad
+\item Con múltiples instrumentos, es inapropiado usar un $F$ convencional o robusto a la heterocedasticidad para evaluar la fuerza del instrumento
+\item Andrews, et al. (2019) sugieren el estadístico $F$ efectivo de primera etapa de Olea y Pflueger (2013)
+\item El caso de identificación justa con un solo instrumento se reduce al $F$ robusto convencional y al Wald de Kleibergen y Paap (2006)
 \end{itemize}
 
 \end{frame}
 
 
 
+\end{document}
 
 
 
